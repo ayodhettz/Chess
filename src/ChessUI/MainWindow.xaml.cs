@@ -19,7 +19,11 @@ namespace ChessUI
     {
 
         private readonly Image[,] pieceImages = new Image[8, 8];
+        private readonly Rectangle[,] highlights = new Rectangle[8, 8];
+        private readonly Dictionary<Position, Move> moveCache = new Dictionary<Position, Move>();
+
         private GameState gameState;
+        private Position selectedPosition = null;
         public MainWindow()
         {
             InitializeComponent();
@@ -38,6 +42,10 @@ namespace ChessUI
                     Image pieceImage = new Image();
                     pieceImages[row, col] = pieceImage;
                     PieceGrid.Children.Add(pieceImage);
+
+                    Rectangle highlight = new Rectangle();
+                    highlights[row, col] = highlight;
+                    HighlightGrid.Children.Add(highlight);
                 }
             }
         }
@@ -51,6 +59,84 @@ namespace ChessUI
                     Piece piece = board[row, col];
                     pieceImages[row, col].Source = Images.GetImage(piece);
                 }
+            }
+        }
+
+        private void BoardGrid_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            Point point = e.GetPosition(BoardGrid);
+            Position pos = ToSquarePosition(point);
+
+            if(selectedPosition == null)
+            {
+                OnFromPositionSelected(pos);
+            }
+            else
+            {
+                OnToPositionSelected(pos);
+            }
+        }
+
+        private Position ToSquarePosition(Point point)
+        {
+            double squareWidth = BoardGrid.ActualWidth / 8;
+            double squareHeight = BoardGrid.ActualHeight / 8;
+            int col = (int)(point.X / squareWidth);
+            int row = (int)(point.Y / squareHeight);
+            return new Position(row, col);
+        }
+
+        private void OnFromPositionSelected(Position pos)
+        {
+            IEnumerable<Move> legalMoves = gameState.LegalMoves(pos);
+            if(legalMoves.Any())
+            {
+                selectedPosition = pos;
+                CacheMoves(legalMoves);
+                HighlightMoves(legalMoves);
+            }
+        }
+
+        private void OnToPositionSelected(Position pos)
+        {
+            selectedPosition = null;
+            ClearHighlights();
+
+            if (moveCache.TryGetValue(pos, out Move move))
+            {
+                HandleMove(move);
+            }
+        }
+        private void HandleMove(Move move)
+        {
+            gameState.ApplyMove(move);
+            DrawBoard(gameState.Board);
+        }
+
+        private void CacheMoves(IEnumerable<Move> moves)
+        {
+            moveCache.Clear();
+            foreach(Move move in moves)
+            {
+                moveCache[move.To] = move;
+            }
+        }
+
+        private void HighlightMoves(IEnumerable<Move> moves)
+        {
+            Color colour = Color.FromArgb(150, 125, 255, 125);
+
+            foreach(Position to in moveCache.Keys)
+            {
+                highlights[to.Row, to.Column].Fill = new SolidColorBrush(colour);
+            }
+        }
+
+        private void ClearHighlights()
+        {
+            foreach (Position to in moveCache.Keys)
+            {
+                highlights[to.Row, to.Column].Fill = Brushes.Transparent;
             }
         }
     }
