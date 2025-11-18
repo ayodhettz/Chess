@@ -60,7 +60,7 @@ namespace ChessLogic
             return pos.Row >= 0 && pos.Row < 8 && pos.Column >= 0 && pos.Column < 8;
         }
 
-        public bool IsEmpty(Position pos, Board board)
+        public bool IsEmpty(Position pos)
         {
             return this[pos] == null;
         }
