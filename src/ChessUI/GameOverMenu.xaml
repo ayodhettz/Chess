@@ -22,14 +22,14 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.ColumnSpan="2"
-                       x:Name="Winner Text"
+                       x:Name="Winner_Text"
                        Text="WINNER TEXT"
                        Style="{StaticResource TextStyle}"
                        FontSize="24"
                        />
             <TextBlock Grid.Row="1"
                        Grid.ColumnSpan="2"
-                       x:Name="Reason Text"
+                       x:Name="Reason_Text"
                        Text="REASON TEXT"
                        Style="{StaticResource TextStyle}"
                        FontSize="16"
