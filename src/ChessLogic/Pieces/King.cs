@@ -43,5 +43,10 @@ namespace ChessLogic
                 yield return new NormalMove(from, to);
             }
         }
+
+        public override bool CanCaptureOpponentKing(Position from, Board board)
+        {
+            return ValidMovePositions(from, board).Any(to=> board[to] is King && board[to].Colour != Colour);
+        }
     }
 }
