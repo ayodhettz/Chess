@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ChessLogic
+{
+    public enum EndReason
+    {
+        Checkmate,
+        Stalemate,
+        Resignation,
+        InsufficientMaterial,
+        FiftyMoveRule,
+        ThreefoldRepetition
+    }
+}
