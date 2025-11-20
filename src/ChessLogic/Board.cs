@@ -92,5 +92,15 @@ namespace ChessLogic
                 .Where(pos => this[pos].Colour != player)
                 .Any(pos => this[pos].CanCaptureOpponentKing(pos, this));
         }
+
+        public Board Copy()
+        {
+            Board newBoard = new Board();
+            foreach(Position pos in AllPositions())
+            {
+                newBoard[pos] = this[pos].Copy();
+            }
+            return newBoard;
+        }
     }
 }
