@@ -16,7 +16,7 @@
             <Setter Property="CornerRadius" Value="10"/>
         </Style>
 
-        <Style TargetType="TextBllock" x:Key="TextStyle">
+        <Style TargetType="TextBlock" x:Key="TextStyle">
             <Setter Property="FontFamily" Value="Segoe UI Light"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -33,9 +33,9 @@
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Resources>
-                <Style.TargetType="Border">
+                <Style TargetType="Border">
                     <Setter Property="CornerRadius" Value="5"/>
-                </Style.TargetType>
+                </Style>
             </Style.Resources>
         </Style>
     </Application.Resources>
