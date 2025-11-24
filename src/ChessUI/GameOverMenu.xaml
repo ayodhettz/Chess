@@ -36,7 +36,7 @@
                        />
             <Button Grid.Row="2"
                     Grid.Column="0"
-                    Content="REMATCH"
+                    Content="Rematch"
                     Style="{StaticResource ButtonStyle}"
                     Margin="10"
                     Click="Rematch_Button_Click"
