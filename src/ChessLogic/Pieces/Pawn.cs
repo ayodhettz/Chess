@@ -44,7 +44,17 @@ namespace ChessLogic
             Position oneStep = from + forward;
             if(CanMoveTo(oneStep, board))
             {
-                yield return new NormalMove(from, oneStep);
+                if(oneStep.Row == 0 || oneStep.Row == 7)
+                {
+                    foreach(Move promotionMove in PromotionMoves(from, oneStep))
+                    {
+                        yield return promotionMove;
+                    }
+                }
+                else
+                {
+                    yield return new NormalMove(from, oneStep);
+                }
 
                 Position twoSteps = oneStep + forward;
                 if (!HasMoved && CanMoveTo(twoSteps, board))
@@ -62,7 +72,17 @@ namespace ChessLogic
 
                 if (CanCaptureAt(to, board))
                 {
-                    yield return new NormalMove(from, to);
+                    if (to.Row == 0 || to.Row == 7)
+                    {
+                        foreach (Move promotionMove in PromotionMoves(from, to))
+                        {
+                            yield return promotionMove;
+                        }
+                    }
+                    else
+                    {
+                        yield return new NormalMove(from, to);
+                    }
                 }
             }
         }
@@ -75,6 +95,14 @@ namespace ChessLogic
         public override bool CanCaptureOpponentKing(Position from, Board board)
         {
             return GetCaptureMoves(from, board).Any(move => board[move.To] is King && board[move.To].Colour != Colour);
+        }
+
+        private static IEnumerable<Move> PromotionMoves(Position from, Position to)
+        {
+            yield return new PawnPromotion(from, to, PieceType.Queen);
+            yield return new PawnPromotion(from, to, PieceType.Rook);
+            yield return new PawnPromotion(from, to, PieceType.Bishop);
+            yield return new PawnPromotion(from, to, PieceType.Knight);
         }
     }
 }

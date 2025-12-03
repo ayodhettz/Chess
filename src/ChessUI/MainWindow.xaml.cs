@@ -109,7 +109,12 @@ namespace ChessUI
 
             if (moveCache.TryGetValue(pos, out Move move))
             {
-                HandleMove(move);
+                if(move.Type == MoveType.PawnPromotion)
+                {
+                    HandlePromotion(move.From, move.To);
+                }
+                else
+                    HandleMove(move);
             }
         }
         private void HandleMove(Move move)
@@ -122,6 +127,22 @@ namespace ChessUI
             {
                 ShowGameOverMenu();
             }
+        }
+
+        private void HandlePromotion(Position from, Position to)
+        {
+            pieceImages[to.Row, to.Column].Source = Images.GetImage(PieceType.Pawn, gameState.CurrentPlayer);
+            pieceImages[from.Row, from.Column].Source = null;
+
+            PromotionMenu promMenu = new PromotionMenu(gameState.CurrentPlayer);
+            MenuContainer.Content = promMenu;
+
+            promMenu.PieceSelected += type =>
+            {
+                MenuContainer.Content = null;
+                Move promMove = new PawnPromotion(from, to, type);
+                HandleMove(promMove);
+            };
         }
 
         private void CacheMoves(IEnumerable<Move> moves)
