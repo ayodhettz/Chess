@@ -13,6 +13,6 @@ namespace ChessLogic
         CastingQS,
         DoubleStep,
         EnPassant,
-        Promotion
+        PawnPromotion
     }
 }
