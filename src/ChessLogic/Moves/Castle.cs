@@ -63,8 +63,8 @@ namespace ChessLogic
             //create board copy and check if the king lands on a check
             for (int i = 0; i < 2; i++)
             {
+                new NormalMove(kingPos, kingPos  + kingMoveDir).Execute(copy);
                 kingPos += kingMoveDir;
-                new NormalMove(From, kingPos).Execute(copy);
                 if (copy.IsInCheck(player))
                 {
                     return false;
