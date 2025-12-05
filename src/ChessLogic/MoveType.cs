@@ -10,7 +10,7 @@ namespace ChessLogic
     {
         Normal,
         CastlingKS,
-        CastingQS,
+        CastlingQS,
         DoubleStep,
         EnPassant,
         PawnPromotion

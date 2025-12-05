@@ -48,5 +48,56 @@ namespace ChessLogic
         {
             return ValidMovePositions(from, board).Any(to=> board[to] is King && board[to].Colour != Colour);
         }
+
+        private static bool IsUnmovedRook(Position pos, Board board)
+        {
+            if (board.IsEmpty(pos))
+            {
+                return false;
+            }
+            else
+            {
+                Piece piece = board[pos];
+                return piece.Type == PieceType.Rook && !piece.HasMoved;
+            }
+        }
+
+        private static bool AllEmpty(IEnumerable<Position> positions, Board board)
+        { 
+            return positions.All(pos => board.IsEmpty(pos));
+        }
+
+        private bool KingSideCastle(Position from, Board board)
+        {
+            if (HasMoved)
+            {
+                return false;
+            }
+
+            Position rookPos = new Position(from.Row, 7);
+            Position[] between = new Position[]
+            {
+                new (from.Row, 5),
+                new (from.Row, 6)
+            };
+
+            return IsUnmovedRook(rookPos, board) && AllEmpty(between, board);
+        }
+
+        private bool QueenSideCastle(Position from, Board board)
+        {
+            if (HasMoved)
+            {
+                return false;
+            }
+            Position rookPos = new Position(from.Row, 0);
+            Position[] between = new Position[]
+            {
+                new (from.Row, 1),
+                new (from.Row, 2),
+                new (from.Row, 3)
+            };
+            return IsUnmovedRook(rookPos, board) && AllEmpty(between, board);
+        }
     }
 }
