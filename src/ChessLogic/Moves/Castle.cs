@@ -46,5 +46,32 @@ namespace ChessLogic
             new NormalMove(From, To).Execute(board);
             new NormalMove(rookFrom, rookTo).Execute(board);
         }
+
+
+        public override bool IsLegal(Board board)
+        {
+            Player player = board[From].Colour;
+
+            if(board.IsInCheck(player))
+            {
+                return false;
+            }
+
+            Board copy = board.Copy();
+            Position kingPos = From;
+
+            //create board copy and check if the king lands on a check
+            for (int i = 0; i < 2; i++)
+            {
+                kingPos += kingMoveDir;
+                new NormalMove(From, kingPos).Execute(copy);
+                if (copy.IsInCheck(player))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }

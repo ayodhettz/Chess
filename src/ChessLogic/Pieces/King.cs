@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ChessLogic
+﻿namespace ChessLogic
 {
     public class King : Piece
     {
@@ -109,5 +103,6 @@ namespace ChessLogic
             };
             return IsUnmovedRook(rookPos, board) && AllEmpty(between, board);
         }
+
     }
 }
