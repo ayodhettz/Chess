@@ -42,6 +42,16 @@ namespace ChessLogic
             {
                 yield return new NormalMove(from, to);
             }
+
+            if(KingSideCastle(from, board))
+            {
+                yield return new Castle(MoveType.CastlingKS, from);
+            }
+
+            if(QueenSideCastle(from, board))
+            {
+                yield return new Castle(MoveType.CastlingQS, from);
+            }
         }
 
         public override bool CanCaptureOpponentKing(Position from, Board board)
