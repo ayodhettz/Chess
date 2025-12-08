@@ -10,6 +10,12 @@ namespace ChessLogic
     {
         private readonly Piece[,] pieces = new Piece[8, 8];
 
+        private readonly Dictionary<Player, Position> pawnSkipPosition = new Dictionary<Player, Position>
+        {
+            { Player.White, null},
+            { Player.Black, null}
+        };
+
         //get or set a piece onto a position on the board by providing the row and column || by providing a Position object
         public Piece this[int row, int col]
         {
@@ -96,11 +102,21 @@ namespace ChessLogic
         public Board Copy()
         {
             Board newBoard = new Board();
-            foreach(Position pos in AllPositions())
+            foreach (Position pos in AllPositions())
             {
                 newBoard[pos] = this[pos].Copy();
             }
             return newBoard;
+        }
+
+        public Position GetPawnSkipPosition(Player player)
+        {
+            return pawnSkipPosition[player];
+        }
+
+        public void SetPawnSkipPosition(Player player, Position pos)
+        {
+            pawnSkipPosition[player] = pos;
         }
     }
 }
