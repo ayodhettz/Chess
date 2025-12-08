@@ -30,7 +30,6 @@ namespace ChessLogic
 
         public void ApplyMove(Move move)
         {
-            Board.SetPawnSkipPosition(CurrentPlayer, null);
             move.Execute(Board);
             CurrentPlayer = CurrentPlayer.Opponent();
             CheckForGameEnd();
