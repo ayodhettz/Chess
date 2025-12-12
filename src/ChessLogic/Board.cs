@@ -160,19 +160,16 @@ namespace ChessLogic
 
         private bool IsKingBishopVsKingBishop(Counting counting)
         {
-            if(counting.TotalCount == 4)
+            if (counting.TotalCount != 4)
             {
                 return false;
             }
-            if(counting.White(PieceType.Bishop) != 1 && counting.Black(PieceType.Bishop) != 1)
+            if (counting.White(PieceType.Bishop) != 1 && counting.Black(PieceType.Bishop) != 1)
             {
                 return false;
             }
-
-            Position wBishopPos = FindPiece( Player.White, PieceType.Bishop);    
-            Position bBishopPos = FindPiece( Player.Black, PieceType.Bishop);
-
-            return wBishopPos.SquareColor() == bBishopPos.SquareColor();
+            Position wBishopPos = FindPiece(Player.White, PieceType.Bishop);
+            Position bBishopPos = FindPiece(Player.Black, PieceType.Bishop);
         }
 
         private Position FindPiece(Player colour, PieceType type)
