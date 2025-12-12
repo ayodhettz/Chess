@@ -170,6 +170,8 @@ namespace ChessLogic
             }
             Position wBishopPos = FindPiece(Player.White, PieceType.Bishop);
             Position bBishopPos = FindPiece(Player.Black, PieceType.Bishop);
+
+            return wBishopPos.SquareColor() == bBishopPos.SquareColor();
         }
 
         private Position FindPiece(Player colour, PieceType type)
