@@ -30,5 +30,6 @@ namespace ChessLogic
         {
             return new Result(Player.None, reason);
         }
+
     }
 }

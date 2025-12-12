@@ -57,6 +57,10 @@ namespace ChessLogic
                     Result = Result.DrawByStalemate(EndReason.Stalemate);
                 }
             }
+            else if (Board.InsufficientMaterial())
+            {
+                Result = Result.DrawByStalemate(EndReason.InsufficientMaterial);
+            }
         }
 
         public bool IsGameOver()

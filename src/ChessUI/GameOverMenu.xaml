@@ -32,7 +32,7 @@
                        x:Name="Reason_Text"
                        Text="REASON TEXT"
                        Style="{StaticResource TextStyle}"
-                       FontSize="16"
+                       FontSize="12"
                        />
             <Button Grid.Row="2"
                     Grid.Column="0"

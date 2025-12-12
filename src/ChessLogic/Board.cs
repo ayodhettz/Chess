@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -117,6 +118,66 @@ namespace ChessLogic
         public void SetPawnSkipPosition(Player player, Position pos)
         {
             pawnSkipPosition[player] = pos;
+        }
+
+        public Counting CountPieces()
+        {
+            Counting counting = new Counting();
+
+            foreach (Position pos in AllPositions())
+            {
+                Piece piece = this[pos];
+                counting.Increment(piece.Colour, piece.Type);
+            }
+
+            return counting;
+        }
+
+        public bool InsufficientMaterial()
+        {
+            Counting counting = CountPieces();
+
+            return IsKingVsKing(counting) ||
+                   IsKingBishopVsKing(counting) ||
+                   IsKingKnightVsKing(counting) ||
+                   IsKingBishopVsKingBishop(counting);
+        }
+
+        private static bool IsKingVsKing(Counting counting)
+        {
+            return counting.TotalCount == 2;
+        }
+
+        private static bool IsKingBishopVsKing(Counting counting)
+        {
+            return counting.TotalCount == 3 && (counting.White(PieceType.Bishop) == 1 || counting.Black(PieceType.Bishop) == 1);
+        }
+
+        private static bool IsKingKnightVsKing(Counting counting)
+        {
+            return counting.TotalCount == 3 && (counting.White(PieceType.Knight) == 1 || counting.Black(PieceType.Knight) == 1);
+        }
+
+        private bool IsKingBishopVsKingBishop(Counting counting)
+        {
+            if(counting.TotalCount == 4)
+            {
+                return false;
+            }
+            if(counting.White(PieceType.Bishop) != 1 && counting.Black(PieceType.Bishop) != 1)
+            {
+                return false;
+            }
+
+            Position wBishopPos = FindPiece( Player.White, PieceType.Bishop);    
+            Position bBishopPos = FindPiece( Player.Black, PieceType.Bishop);
+
+            return wBishopPos.SquareColor() == bBishopPos.SquareColor();
+        }
+
+        private Position FindPiece(Player colour, PieceType type)
+        {
+            return PositionsOfPlayer(colour).First(Position=> this[Position].Type == type);
         }
     }
 }
