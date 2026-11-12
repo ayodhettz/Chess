@@ -13,6 +13,8 @@ namespace ChessLogic
         Resignation,
         InsufficientMaterial,
         FiftyMoveRule,
-        ThreefoldRepetition
+        ThreefoldRepetition,
+        SeventyFiveMoveRule,
+        FivefoldRepetition
     }
 }
