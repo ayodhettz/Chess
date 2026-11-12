@@ -11,7 +11,7 @@ namespace ChessLogic
     {
         private readonly Piece[,] pieces = new Piece[8, 8];
 
-        private readonly Dictionary<Player, Position> pawnSkipPosition = new Dictionary<Player, Position>
+        private readonly Dictionary<Player, Position?> pawnSkipPosition = new Dictionary<Player, Position?>
         {
             { Player.White, null},
             { Player.Black, null}
@@ -107,15 +107,17 @@ namespace ChessLogic
             {
                 newBoard[pos] = this[pos].Copy();
             }
+            newBoard.SetPawnSkipPosition(Player.White, GetPawnSkipPosition(Player.White));
+            newBoard.SetPawnSkipPosition(Player.Black, GetPawnSkipPosition(Player.Black));
             return newBoard;
         }
 
-        public Position GetPawnSkipPosition(Player player)
+        public Position? GetPawnSkipPosition(Player player)
         {
             return pawnSkipPosition[player];
         }
 
-        public void SetPawnSkipPosition(Player player, Position pos)
+        public void SetPawnSkipPosition(Player player, Position? pos)
         {
             pawnSkipPosition[player] = pos;
         }
@@ -164,7 +166,7 @@ namespace ChessLogic
             {
                 return false;
             }
-            if (counting.White(PieceType.Bishop) != 1 && counting.Black(PieceType.Bishop) != 1)
+            if (counting.White(PieceType.Bishop) != 1 || counting.Black(PieceType.Bishop) != 1)
             {
                 return false;
             }
