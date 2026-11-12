@@ -1,25 +1,58 @@
 # Chess
-A Windows desktop chess application built with C#, .NET Framework, and WPF. The project features standard chess logic with a simple graphical interface for playing and testing gameplay mechanics. It will act as the foundation for future enhancements including multiple game modes and engine development.
 
-# Overview
-This project implements the core rules of chess inside a structured C# codebase. It includes board state management, move validation, turn handling, and piece-specific logic.
+A local two-player chess application for Windows, built with C#, .NET 10 LTS, and WPF.
+The rules live in `ChessLogic`; the desktop interface lives in `ChessUI`.
 
-The WPF front-end provides a lightweight interface for visualizing the board and interacting with the game.
+The original foundation follows [OttoBotCode's chess tutorial](https://www.youtube.com/@OttoBotCode).
 
+## Build and run
 
-The base project was created while following the tutorial posted by OttoBotCode on youtube http://www.youtube.com/@OttoBotCode
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows.
+From the repository root:
 
-# Tech Stack
-Language : C#
+```powershell
+dotnet restore src/Chess.sln
+dotnet build src/Chess.sln --configuration Release
+dotnet run --project src/ChessUI/ChessUI.csproj
+```
 
-Runtime : .NET Framework (6.0)
+Alternatively, open `src/Chess.sln` in a Visual Studio version supporting .NET 10
+with the **.NET desktop development** workload, and select `ChessUI` as the startup project.
 
-UI Framework : WPF
+Select a piece, then a highlighted destination. Choose a piece when promoting a pawn.
+Press **Escape** to pause, continue, or restart.
 
-# Features Implemented
-* Fully rendered 8 x 8 chess board
-* Piece Movement & Rule enforcement
-* Turn Tracking
-* Move Validation
-* User Input
-* Extensible code structure
+## Features
+
+- Board rendering and legal-move highlights
+- Turn tracking and king-safety validation
+- Castling, en passant, and all four promotion choices
+- Checkmate, stalemate, and basic insufficient-material detection
+- Pause, restart, and rematch menus
+
+## Validation and delivery
+
+Pull requests to `main` and pushes to `main` run the GitHub Actions workflow:
+
+1. Restore and build the solution on Windows.
+2. Run all test projects in the solution and upload TRX results when available.
+3. Publish and upload `Chess-win-x64.zip` as a workflow artifact.
+
+The ZIP contains a self-contained Windows x64 build, so players do not need to install .NET.
+Extract the full archive and run `ChessUI.exe`.
+
+To publish a GitHub Release after merging and checking CI, tag a commit on `main`:
+
+```powershell
+git switch main
+git pull --ff-only
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag workflow builds and validates the application before publishing the ZIP and
+generated release notes. Tags outside `main` are rejected. No signing credentials are configured.
+Use a new version tag for each release.
+
+The `Windows build and tests` check can be selected as a required status check in the
+repository's branch protection settings after its first run.
