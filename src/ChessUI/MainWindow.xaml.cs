@@ -23,7 +23,7 @@ namespace ChessUI
         private readonly Dictionary<Position, Move> moveCache = new Dictionary<Position, Move>();
 
         private GameState gameState;
-        private Position selectedPosition = null;
+        private Position? selectedPosition;
         public MainWindow()
         {
             InitializeComponent();
@@ -32,6 +32,7 @@ namespace ChessUI
             gameState = new GameState(Board.Initial(), Player.White);
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
+            UpdateStatus();
         }
 
         private void InitializeBoard()
@@ -65,12 +66,13 @@ namespace ChessUI
 
         private void BoardGrid_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if(IsMenuOnScreen())
+            if (IsMenuOnScreen() || gameState.IsGameOver() || e.ChangedButton != MouseButton.Left)
                 return;
 
 
             Point point = e.GetPosition(BoardGrid);
             Position pos = ToSquarePosition(point);
+            if (!Board.IsInside(pos)) return;
 
             if(selectedPosition == null)
             {
@@ -93,12 +95,12 @@ namespace ChessUI
 
         private void OnFromPositionSelected(Position pos)
         {
-            IEnumerable<Move> legalMoves = gameState.LegalMoves(pos);
-            if(legalMoves.Any())
+            Move[] legalMoves = gameState.LegalMoves(pos).ToArray();
+            if (legalMoves.Length > 0)
             {
                 selectedPosition = pos;
                 CacheMoves(legalMoves);
-                HighlightMoves(legalMoves);
+                HighlightMoves();
             }
         }
 
@@ -107,7 +109,7 @@ namespace ChessUI
             selectedPosition = null;
             ClearHighlights();
 
-            if (moveCache.TryGetValue(pos, out Move move))
+            if (moveCache.TryGetValue(pos, out Move? move))
             {
                 if(move.Type == MoveType.PawnPromotion)
                 {
@@ -116,12 +118,35 @@ namespace ChessUI
                 else
                     HandleMove(move);
             }
+            else
+            {
+                OnFromPositionSelected(pos);
+            }
         }
         private void HandleMove(Move move)
         {
+            if (gameState.IsGameOver()) return;
+
+            if (ClaimWithMoveCheckBox.IsChecked == true)
+            {
+                DrawBoard(gameState.Board);
+                if (!gameState.CanClaimDraw(move))
+                {
+                    ClaimHintText.Text = "That move does not qualify for a draw claim.";
+                    UpdateStatus();
+                    return;
+                }
+                gameState.ClaimDraw(move);
+                UpdateStatus();
+                ShowGameOverMenu();
+                return;
+            }
+
             gameState.ApplyMove(move);
+            ClaimHintText.Text = "";
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
+            UpdateStatus();
 
             if(gameState.IsGameOver())
             {
@@ -136,6 +161,7 @@ namespace ChessUI
 
             PromotionMenu promMenu = new PromotionMenu(gameState.CurrentPlayer);
             MenuContainer.Content = promMenu;
+            UpdateStatus();
 
             promMenu.PieceSelected += type =>
             {
@@ -154,7 +180,7 @@ namespace ChessUI
             }
         }
 
-        private void HighlightMoves(IEnumerable<Move> moves)
+        private void HighlightMoves()
         {
             Color colour = Color.FromArgb(150, 125, 255, 125);
 
@@ -193,6 +219,7 @@ namespace ChessUI
         {
             GameOverMenu menu = new GameOverMenu(gameState);
             MenuContainer.Content = menu;
+            UpdateStatus();
 
             menu.OptionSelected += option =>
             {
@@ -216,11 +243,60 @@ namespace ChessUI
             gameState = new GameState(Board.Initial(), Player.White);
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
+            ClaimWithMoveCheckBox.IsChecked = false;
+            ClaimHintText.Text = "";
+            UpdateStatus();
+        }
+
+        private void UpdateStatus()
+        {
+            StatusText.Text = gameState.IsGameOver() ? "Game over" :
+                $"{gameState.CurrentPlayer} to move" + (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
+            ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
+            ClaimDrawButton.IsEnabled = gameState.CanClaimDraw();
+
+            while (HistoryList.Items.Count < gameState.History.Count)
+            {
+                int index = HistoryList.Items.Count;
+                MoveRecord move = gameState.History[index];
+                HistoryList.Items.Add($"{index / 2 + 1}. {move.Player}: {move}");
+            }
+            if (gameState.History.Count == 0) HistoryList.Items.Clear();
+            if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
+        }
+
+        private void ClaimDraw_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsMenuOnScreen() || !gameState.CanClaimDraw()) return;
+            gameState.ClaimDraw();
+            ClearHighlights();
+            selectedPosition = null;
+            ShowGameOverMenu();
+        }
+
+        private void Resign_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsMenuOnScreen() || gameState.IsGameOver()) return;
+            gameState.Resign();
+            ClearHighlights();
+            selectedPosition = null;
+            ShowGameOverMenu();
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            if (!IsMenuOnScreen() && e.Key == Key.Escape)
+            if (e.Key != Key.Escape) return;
+            e.Handled = true;
+
+            if (MenuContainer.Content is PauseMenu)
+            {
+                MenuContainer.Content = null;
+                UpdateStatus();
+                return;
+            }
+
+            // Promotion and game-over menus must stay until resolved.
+            if (!IsMenuOnScreen() && !gameState.IsGameOver())
             {
                 PauseMenu pauseMenu = new PauseMenu();
                 MenuContainer.Content = pauseMenu;
@@ -229,6 +305,7 @@ namespace ChessUI
                     if (option == Options.Continue)
                     {
                         MenuContainer.Content = null;
+                        UpdateStatus();
                     }
                     else if (option == Options.Restart)
                     {
@@ -236,10 +313,7 @@ namespace ChessUI
                         RestartGame();
                     }
                 };
-            }
-            else if (IsMenuOnScreen() && e.Key == Key.Escape)
-            {
-                MenuContainer.Content = null;
+                UpdateStatus();
             }
         }
     }

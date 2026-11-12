@@ -21,13 +21,13 @@ namespace ChessUI
     /// </summary>
     public partial class GameOverMenu : UserControl
     {
-        public event Action<Options> OptionSelected;
+        public event Action<Options>? OptionSelected;
 
         public GameOverMenu(GameState gameState)
         {
             InitializeComponent();
 
-            Result result = gameState.Result;
+            Result result = gameState.Result ?? throw new ArgumentException("The game has not ended.", nameof(gameState));
             Winner_Text.Text = GetWinnerText(result.Winner);
             Reason_Text.Text = GetReasonText(result.Reason, gameState.CurrentPlayer);
         }
@@ -62,6 +62,8 @@ namespace ChessUI
                 EndReason.InsufficientMaterial => "The game ended due to insufficient material.",
                 EndReason.FiftyMoveRule => "The game ended due to the fifty-move rule.",
                 EndReason.ThreefoldRepetition => "The game ended due to threefold repetition.",
+                EndReason.FivefoldRepetition => "The game ended due to fivefold repetition.",
+                EndReason.SeventyFiveMoveRule => "The game ended due to the seventy-five-move rule.",
                 _ => ""
             };
         }

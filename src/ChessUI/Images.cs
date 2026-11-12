@@ -28,7 +28,7 @@ namespace ChessUI
 
         private static ImageSource LoadImage(string filePath)
         {
-            return new BitmapImage(new Uri(filePath, UriKind.Relative));
+            return new BitmapImage(new Uri($"pack://application:,,,/ChessUI;component/{filePath}", UriKind.Absolute));
         }
 
         public static ImageSource GetImage(PieceType type, Player colour)
@@ -41,7 +41,7 @@ namespace ChessUI
             };
         }
 
-        public static ImageSource GetImage(Piece piece)
+        public static ImageSource? GetImage(Piece? piece)
         {
             if (piece == null)
                 return null;

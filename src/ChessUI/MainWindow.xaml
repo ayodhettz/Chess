@@ -5,20 +5,25 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChessUI"
         mc:Ignorable="d"
-        Title="Chess" SizeToContent="Height" Width="600"
-        Icon="Assets/icon.ico"
+        Title="Chess" Width="880" Height="680" MinWidth="680" MinHeight="540"
+        Icon="/ChessUI;component/Assets/icon.ico"
         WindowStartupLocation="CenterScreen"
         Background="#101010"
-        KeyDown="Window_KeyDown">
+        PreviewKeyDown="Window_KeyDown">
     
-    <Viewbox>
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="220"/>
+        </Grid.ColumnDefinitions>
+    <Viewbox Grid.Column="0">
         <Grid x:Name="BoardGrid"
               Width="600"
               Height="600"
               MouseDown="BoardGrid_MouseDown"
               >
             <Grid.Background>
-                <ImageBrush ImageSource="/Assets/Board.png"/>
+                <ImageBrush ImageSource="/ChessUI;component/Assets/Board.png"/>
             </Grid.Background>
             <UniformGrid x:Name ="HighlightGrid"
                          Rows="8"
@@ -36,4 +41,36 @@
             <ContentControl x:Name="MenuContainer"/>
         </Grid>
     </Viewbox>
+        <Grid Grid.Column="1" Margin="12,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,0,12">
+                <TextBlock x:Name="StatusText" Style="{StaticResource TextStyle}"
+                           FontSize="22" TextWrapping="Wrap"/>
+                <TextBlock Text="Move history" Style="{StaticResource TextStyle}"
+                           FontSize="16" Margin="0,12,0,0"/>
+            </StackPanel>
+            <ListBox x:Name="HistoryList" Grid.Row="1" FontFamily="Consolas"
+                     Background="#202020" Foreground="{StaticResource TextColor}"
+                     BorderBrush="{StaticResource StrokeColor}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+            <StackPanel x:Name="ActionPanel" Grid.Row="2" Margin="0,12,0,0">
+                <TextBlock x:Name="ClaimHintText" Foreground="{StaticResource TextColor}"
+                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <CheckBox x:Name="ClaimWithMoveCheckBox" Content="Claim with next move"
+                          Foreground="{StaticResource TextColor}" Margin="0,0,0,8"
+                          ToolTip="Select a legal move to claim a draw before playing it."/>
+                <Button x:Name="ClaimDrawButton" Content="Claim draw"
+                        Style="{StaticResource ButtonStyle}" Click="ClaimDraw_Click"
+                        ToolTip="Claim a draw by repetition or the fifty-move rule."/>
+                <Button Content="Resign" Style="{StaticResource ButtonStyle}"
+                        Click="Resign_Click" Margin="0,8,0,0"/>
+                <TextBlock Text="Escape: pause / continue" Style="{StaticResource TextStyle}"
+                           FontSize="12" Margin="0,12,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>
