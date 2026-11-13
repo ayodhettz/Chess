@@ -1,8 +1,11 @@
+using System.Numerics;
+
 namespace ChessLogic
 {
     public sealed class MoveRecord
     {
         public Player Player { get; }
+        public BigInteger FullMoveNumber { get; }
         public PieceType PieceType { get; }
         public MoveType MoveType { get; }
         public Position From { get; }
@@ -10,9 +13,10 @@ namespace ChessLogic
         public PieceType? CapturedPieceType { get; }
         public PieceType? PromotionType { get; }
 
-        internal MoveRecord(Player player, PieceType pieceType, Move move, PieceType? capturedPieceType)
+        internal MoveRecord(Player player, PieceType pieceType, Move move, PieceType? capturedPieceType, BigInteger fullMoveNumber)
         {
             Player = player;
+            FullMoveNumber = fullMoveNumber;
             PieceType = pieceType;
             MoveType = move.Type;
             From = move.From;
