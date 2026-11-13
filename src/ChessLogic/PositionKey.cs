@@ -11,7 +11,7 @@ namespace ChessLogic
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    Piece piece = board[row, col];
+                    Piece? piece = board[row, col];
                     key.Append(piece == null ? '.' : (char)('A' + (int)piece.Type + 6 * (int)piece.Colour));
                 }
             }
@@ -24,7 +24,7 @@ namespace ChessLogic
             Position? skip = board.GetPawnSkipPosition(player.Opponent());
             if (skip != null && board.PositionsOfPlayer(player)
                 .Where(pos => board[pos] is Pawn)
-                .SelectMany(pos => board[pos].GetMoves(pos, board))
+                .SelectMany(pos => board.GetPiece(pos).GetMoves(pos, board))
                 .Any(move => move.Type == MoveType.EnPassant && move.IsLegal(board)))
             {
                 key.Append('|').Append(skip.Row).Append(',').Append(skip.Column);

@@ -24,17 +24,17 @@ public class BoardTests
         Board board = Board.Initial();
         board.SetPawnSkipPosition(Player.White, At("e3"));
         board.SetPawnSkipPosition(Player.Black, At("d6"));
-        board[At("g1")].HasMoved = true;
+        board.GetPiece(At("g1")).HasMoved = true;
 
         Board copy = board.Copy();
 
         Assert.Equal(At("e3"), copy.GetPawnSkipPosition(Player.White));
         Assert.Equal(At("d6"), copy.GetPawnSkipPosition(Player.Black));
         Assert.NotSame(board[At("g1")], copy[At("g1")]);
-        Assert.True(copy[At("g1")].HasMoved);
+        Assert.True(copy.GetPiece(At("g1")).HasMoved);
         copy.SetPawnSkipPosition(Player.Black, null!);
-        copy[At("g1")].HasMoved = false;
+        copy.GetPiece(At("g1")).HasMoved = false;
         Assert.Equal(At("d6"), board.GetPawnSkipPosition(Player.Black));
-        Assert.True(board[At("g1")].HasMoved);
+        Assert.True(board.GetPiece(At("g1")).HasMoved);
     }
 }

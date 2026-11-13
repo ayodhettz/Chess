@@ -24,7 +24,7 @@ namespace ChessLogic
                     yield return pos;
                     continue;
                 }
-                Piece piece = board[pos];
+                Piece piece = board.GetPiece(pos);
                 if(piece.Colour != Colour)
                 {
                     yield return pos;
@@ -41,7 +41,7 @@ namespace ChessLogic
 
         public virtual bool CanCaptureOpponentKing(Position from, Board board)
         {
-            return GetMoves(from, board).Any(move => board[move.To] is King && board[move.To].Colour != Colour);
+            return GetMoves(from, board).Any(move => board[move.To] is King && board.GetPiece(move.To).Colour != Colour);
         }
     }
 }
