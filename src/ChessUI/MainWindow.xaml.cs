@@ -237,14 +237,40 @@ namespace ChessUI
 
         private void RestartGame()
         {
+            LoadGame(new GameState(Board.Initial(), Player.White));
+        }
+
+        private void LoadGame(GameState game)
+        {
             selectedPosition = null;
             ClearHighlights();
             moveCache.Clear();
-            gameState = new GameState(Board.Initial(), Player.White);
+            HistoryList.Items.Clear();
+            gameState = game;
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             ClaimWithMoveCheckBox.IsChecked = false;
             ClaimHintText.Text = "";
+            UpdateStatus();
+        }
+
+        private void FenPosition_Click(object sender, RoutedEventArgs e)
+        {
+            if (MenuContainer.Content is PromotionMenu or FenMenu) return;
+            object previousMenu = MenuContainer.Content;
+            FenMenu menu = new(gameState.ToFen());
+            MenuContainer.Content = menu;
+            menu.Closed += () =>
+            {
+                MenuContainer.Content = previousMenu;
+                UpdateStatus();
+            };
+            menu.PositionLoaded += game =>
+            {
+                MenuContainer.Content = null;
+                LoadGame(game);
+                if (game.IsGameOver()) ShowGameOverMenu();
+            };
             UpdateStatus();
         }
 
@@ -254,12 +280,13 @@ namespace ChessUI
                 $"{gameState.CurrentPlayer} to move" + (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
             ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
             ClaimDrawButton.IsEnabled = gameState.CanClaimDraw();
+            FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
 
             while (HistoryList.Items.Count < gameState.History.Count)
             {
                 int index = HistoryList.Items.Count;
                 MoveRecord move = gameState.History[index];
-                HistoryList.Items.Add($"{index / 2 + 1}. {move.Player}: {move}");
+                HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move}");
             }
             if (gameState.History.Count == 0) HistoryList.Items.Clear();
             if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
@@ -287,6 +314,12 @@ namespace ChessUI
         {
             if (e.Key != Key.Escape) return;
             e.Handled = true;
+
+            if (MenuContainer.Content is FenMenu fenMenu)
+            {
+                fenMenu.Close();
+                return;
+            }
 
             if (MenuContainer.Content is PauseMenu)
             {

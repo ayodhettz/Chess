@@ -57,17 +57,21 @@
                      Background="#202020" Foreground="{StaticResource TextColor}"
                      BorderBrush="{StaticResource StrokeColor}"
                      ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
-            <StackPanel x:Name="ActionPanel" Grid.Row="2" Margin="0,12,0,0">
-                <TextBlock x:Name="ClaimHintText" Foreground="{StaticResource TextColor}"
-                           TextWrapping="Wrap" Margin="0,0,0,8"/>
-                <CheckBox x:Name="ClaimWithMoveCheckBox" Content="Claim with next move"
-                          Foreground="{StaticResource TextColor}" Margin="0,0,0,8"
-                          ToolTip="Select a legal move to claim a draw before playing it."/>
-                <Button x:Name="ClaimDrawButton" Content="Claim draw"
-                        Style="{StaticResource ButtonStyle}" Click="ClaimDraw_Click"
-                        ToolTip="Claim a draw by repetition or the fifty-move rule."/>
-                <Button Content="Resign" Style="{StaticResource ButtonStyle}"
-                        Click="Resign_Click" Margin="0,8,0,0"/>
+            <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                <StackPanel x:Name="ActionPanel">
+                    <TextBlock x:Name="ClaimHintText" Foreground="{StaticResource TextColor}"
+                               TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="ClaimWithMoveCheckBox" Content="Claim with next move"
+                              Foreground="{StaticResource TextColor}" Margin="0,0,0,8"
+                              ToolTip="Select a legal move to claim a draw before playing it."/>
+                    <Button x:Name="ClaimDrawButton" Content="Claim draw"
+                            Style="{StaticResource ButtonStyle}" Click="ClaimDraw_Click"
+                            ToolTip="Claim a draw by repetition or the fifty-move rule."/>
+                    <Button Content="Resign" Style="{StaticResource ButtonStyle}"
+                            Click="Resign_Click" Margin="0,8,0,0"/>
+                </StackPanel>
+                <Button x:Name="FenPositionButton" Content="FEN position…" Style="{StaticResource ButtonStyle}"
+                        Click="FenPosition_Click" Margin="0,8,0,0"/>
                 <TextBlock Text="Escape: pause / continue" Style="{StaticResource TextStyle}"
                            FontSize="12" Margin="0,12,0,0"/>
             </StackPanel>
