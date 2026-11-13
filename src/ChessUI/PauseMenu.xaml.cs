@@ -20,7 +20,7 @@ namespace ChessUI
     /// </summary>
     public partial class PauseMenu : UserControl
     {
-        public event Action<Options> OptionSelected;
+        public event Action<Options>? OptionSelected;
         public PauseMenu()
         {
             InitializeComponent();

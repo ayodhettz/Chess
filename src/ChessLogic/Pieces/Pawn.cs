@@ -52,7 +52,8 @@ namespace ChessLogic
                 }
 
                 Position twoSteps = oneStep + forward;
-                if (!HasMoved && CanMoveTo(twoSteps, board))
+                int startingRow = Colour == Player.White ? 6 : 1;
+                if (!HasMoved && from.Row == startingRow && CanMoveTo(twoSteps, board))
                 {
                     yield return new DoubleStep(from, twoSteps);
                 }
@@ -65,7 +66,10 @@ namespace ChessLogic
             {
                 Position to = from + forward + dir;
 
-                if(to == board.GetPawnSkipPosition(Colour.Opponent()))
+                Position capturedPawn = new Position(from.Row, to.Column);
+                if (to == board.GetPawnSkipPosition(Colour.Opponent()) &&
+                    Board.IsInside(to) && board.IsEmpty(to) &&
+                    board[capturedPawn] is Pawn pawn && pawn.Colour != Colour)
                 {
                     yield return new EnPassant(from, to);
                 }else if (CanCaptureAt(to, board))

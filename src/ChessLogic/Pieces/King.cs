@@ -53,7 +53,7 @@
             return ValidMovePositions(from, board).Any(to=> board[to] is King && board[to].Colour != Colour);
         }
 
-        private static bool IsUnmovedRook(Position pos, Board board)
+        private bool IsUnmovedRook(Position pos, Board board)
         {
             if (board.IsEmpty(pos))
             {
@@ -62,7 +62,7 @@
             else
             {
                 Piece piece = board[pos];
-                return piece.Type == PieceType.Rook && !piece.HasMoved;
+                return piece.Type == PieceType.Rook && piece.Colour == Colour && !piece.HasMoved;
             }
         }
 
@@ -73,7 +73,7 @@
 
         private bool KingSideCastle(Position from, Board board)
         {
-            if (HasMoved)
+            if (HasMoved || from.Column != 4 || from.Row != (Colour == Player.White ? 7 : 0))
             {
                 return false;
             }
@@ -90,7 +90,7 @@
 
         private bool QueenSideCastle(Position from, Board board)
         {
-            if (HasMoved)
+            if (HasMoved || from.Column != 4 || from.Row != (Colour == Player.White ? 7 : 0))
             {
                 return false;
             }

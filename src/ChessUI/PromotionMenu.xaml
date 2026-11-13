@@ -25,19 +25,19 @@
                          Cursor="Hand">
                 <Image x:Name="QueenImg"
                        MouseDown="QueenImg_MouseDown"
-                       Source="/Assets/QueenW.png"/>
+                       Source="/ChessUI;component/Assets/QueenW.png"/>
 
                 <Image x:Name="RookImg"
                        MouseDown="RookImg_MouseDown"
-                       Source="/Assets/RookW.png"/>
+                       Source="/ChessUI;component/Assets/RookW.png"/>
                 
                 <Image x:Name="BishopImg"
                        MouseDown="BishopImg_MouseDown"
-                       Source="/Assets/BishopW.png"/>
+                       Source="/ChessUI;component/Assets/BishopW.png"/>
                 
                 <Image x:Name="KnightImg"
                        MouseDown="KnightImg_MouseDown"
-                       Source="/Assets/KnightW.png"/>
+                       Source="/ChessUI;component/Assets/KnightW.png"/>
             </UniformGrid>
         </Grid>
             
