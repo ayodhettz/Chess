@@ -19,7 +19,7 @@ namespace ChessLogic
 
         public override void Execute(Board board)
         {
-            Piece piece = board[From];
+            Piece piece = board.GetPiece(From);
             board[To] = piece;
             board[From] = null;
             piece.HasMoved = true;

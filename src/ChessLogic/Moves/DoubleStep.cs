@@ -17,7 +17,7 @@
 
         public override void Execute(Board board)
         {
-            Player player = board[From].Colour;
+            Player player = board.GetPiece(From).Colour;
             board.SetPawnSkipPosition(player, skippedPos);
             new NormalMove(From, To).Execute(board);
         }

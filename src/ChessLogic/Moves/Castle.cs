@@ -50,7 +50,7 @@ namespace ChessLogic
 
         public override bool IsLegal(Board board)
         {
-            Player player = board[From].Colour;
+            Player player = board.GetPiece(From).Colour;
 
             if(board.IsInCheck(player))
             {

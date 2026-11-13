@@ -28,7 +28,7 @@ public class PerftTests
         if (depth == 0) return 1;
         long nodes = 0;
         Move[] moves = board.PositionsOfPlayer(player)
-            .SelectMany(pos => board[pos].GetMoves(pos, board))
+            .SelectMany(pos => board.GetPiece(pos).GetMoves(pos, board))
             .Where(move => move.IsLegal(board)).ToArray();
 
         foreach (Move move in moves)

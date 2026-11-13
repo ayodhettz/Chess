@@ -30,6 +30,8 @@ Press **Escape** to pause, continue, or restart.
 - Checkmate, stalemate, and basic insufficient-material detection
 - Pause, restart, and rematch menus
 
+See [gameplay controls and validation](docs/gameplay.md) for draw claims, move history, resignation, and tests.
+
 ## Validation and delivery
 
 Pull requests to `main` and pushes to `main` run the GitHub Actions workflow:

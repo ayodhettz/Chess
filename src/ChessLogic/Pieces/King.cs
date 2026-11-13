@@ -23,7 +23,7 @@
             foreach (Direction dir in directions)
             {
                 Position to = from + dir;
-                if (Board.IsInside(to) && (board.IsEmpty(to) || board[to].Colour != Colour))
+                if (Board.IsInside(to) && (board.IsEmpty(to) || board.GetPiece(to).Colour != Colour))
                 {
                     yield return to;
                 }
@@ -50,7 +50,7 @@
 
         public override bool CanCaptureOpponentKing(Position from, Board board)
         {
-            return ValidMovePositions(from, board).Any(to=> board[to] is King && board[to].Colour != Colour);
+            return ValidMovePositions(from, board).Any(to=> board[to] is King && board.GetPiece(to).Colour != Colour);
         }
 
         private bool IsUnmovedRook(Position pos, Board board)
@@ -61,7 +61,7 @@
             }
             else
             {
-                Piece piece = board[pos];
+                Piece piece = board.GetPiece(pos);
                 return piece.Type == PieceType.Rook && piece.Colour == Colour && !piece.HasMoved;
             }
         }
