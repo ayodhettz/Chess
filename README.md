@@ -2,6 +2,7 @@
 
 A local two-player chess application for Windows, built with C#, .NET 10 LTS, and WPF.
 The rules live in `ChessLogic`; the desktop interface lives in `ChessUI`.
+Use [FEN positions](docs/fen.md) to import or export a board position.
 
 The original foundation follows [OttoBotCode's chess tutorial](https://www.youtube.com/@OttoBotCode).
 
