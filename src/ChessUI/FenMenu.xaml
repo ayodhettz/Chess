@@ -1,0 +1,24 @@
+<UserControl x:Class="ChessUI.FenMenu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Width="520" Padding="16" VerticalAlignment="Center" Style="{StaticResource BorderStyle}">
+        <StackPanel>
+            <TextBlock Text="FEN position" FontSize="24" Style="{StaticResource TextStyle}"/>
+            <TextBlock Text="Copy this text to export, or paste a position and choose Load."
+                       Foreground="{StaticResource TextColor}" TextWrapping="Wrap" Margin="0,12,0,8"/>
+            <TextBox x:Name="FenTextBox" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" Height="100" FontFamily="Consolas"
+                     FontSize="14" Padding="8"/>
+            <TextBlock Text="Loading starts a new game from this position and clears move history."
+                       Foreground="{StaticResource TextColor}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <TextBlock x:Name="ErrorText" Foreground="{StaticResource TextColor}"
+                       TextWrapping="Wrap" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                <Button Content="Load" Width="100" Style="{StaticResource ButtonStyle}"
+                        Click="Load_Click" Margin="0,0,8,0"/>
+                <Button Content="Close" Width="100" Style="{StaticResource ButtonStyle}"
+                        Click="Close_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Numerics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,9 +18,15 @@ namespace ChessLogic
         public Result? Result { get; private set; }
         public ReadOnlyCollection<MoveRecord> History { get; }
         public int HalfMoveClock { get; private set; }
+        public BigInteger FullMoveNumber { get; private set; }
         public int CurrentPositionRepetitions { get; private set; }
 
         public GameState(Board board, Player currentPlayer)
+            : this(board, currentPlayer, 0, BigInteger.One)
+        {
+        }
+
+        internal GameState(Board board, Player currentPlayer, int halfMoveClock, BigInteger fullMoveNumber)
         {
             ArgumentNullException.ThrowIfNull(board);
             if (currentPlayer != Player.White && currentPlayer != Player.Black)
@@ -29,10 +36,16 @@ namespace ChessLogic
 
             Board = board;
             CurrentPlayer = currentPlayer;
+            HalfMoveClock = halfMoveClock;
+            FullMoveNumber = fullMoveNumber;
             History = history.AsReadOnly();
             RecordPosition();
             CheckForGameEnd();
         }
+
+        public static GameState FromFen(string fen) => Fen.Parse(fen);
+
+        public string ToFen() => Fen.Format(this);
 
         public IEnumerable<Move> LegalMoves(Position pos)
         {
@@ -59,7 +72,8 @@ namespace ChessLogic
             // The moving player's previous double step has now expired.
             Board.SetPawnSkipPosition(CurrentPlayer, null);
             legalMove.Execute(Board);
-            history.Add(new MoveRecord(CurrentPlayer, pieceType, legalMove, capturedType));
+            history.Add(new MoveRecord(CurrentPlayer, pieceType, legalMove, capturedType, FullMoveNumber));
+            if (CurrentPlayer == Player.Black) FullMoveNumber++;
             CurrentPlayer = CurrentPlayer.Opponent();
             RecordPosition();
             CheckForGameEnd();
