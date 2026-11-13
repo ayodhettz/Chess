@@ -12,14 +12,14 @@ public class SpecialMoveTests
     {
         Board board = Parse("4k3/8/8/8/8/8/8/4K3", false);
         board[At(from)] = new Pawn(player);
-        Assert.DoesNotContain(board[At(from)].GetMoves(At(from), board), move => move.Type == MoveType.DoubleStep);
+        Assert.DoesNotContain(board.GetPiece(At(from)).GetMoves(At(from), board), move => move.Type == MoveType.DoubleStep);
     }
 
     [Fact]
     public void CastlingRequiresTheKingsStartingSquare()
     {
         Board board = Parse("k7/8/8/8/8/8/4K2R/8", false);
-        Assert.DoesNotContain(board[At("e2")].GetMoves(At("e2"), board), move => move.Type == MoveType.CastlingKS);
+        Assert.DoesNotContain(board.GetPiece(At("e2")).GetMoves(At("e2"), board), move => move.Type == MoveType.CastlingKS);
     }
 
     [Theory]
@@ -42,8 +42,8 @@ public class SpecialMoveTests
         Assert.IsType<King>(game.Board[At(to)]);
         Assert.IsType<Rook>(game.Board[At(rookTo)]);
         Assert.Null(game.Board[At(rookFrom)]);
-        Assert.True(game.Board[At(to)].HasMoved);
-        Assert.True(game.Board[At(rookTo)].HasMoved);
+        Assert.True(game.Board.GetPiece(At(to)).HasMoved);
+        Assert.True(game.Board.GetPiece(At(rookTo)).HasMoved);
         Assert.Equal(type, game.History[^1].MoveType);
     }
 
@@ -51,7 +51,7 @@ public class SpecialMoveTests
     public void OpponentRookCannotBeUsedToCastle()
     {
         Board board = Parse("k7/8/8/8/8/8/8/4K2r", false);
-        Assert.DoesNotContain(board[At("e1")].GetMoves(At("e1"), board), move => move.Type == MoveType.CastlingKS);
+        Assert.DoesNotContain(board.GetPiece(At("e1")).GetMoves(At("e1"), board), move => move.Type == MoveType.CastlingKS);
     }
 
     [Fact]
@@ -73,8 +73,8 @@ public class SpecialMoveTests
         GameState game = new(Parse("4k3/P7/8/8/8/8/8/4K3"), Player.White);
         Assert.Equal(4, game.LegalMoves(At("a7")).Count(move => move.To == At("a8")));
         Play(game, "a7", "a8", promotion);
-        Assert.Equal(promotion, game.Board[At("a8")].Type);
-        Assert.True(game.Board[At("a8")].HasMoved);
+        Assert.Equal(promotion, game.Board.GetPiece(At("a8")).Type);
+        Assert.True(game.Board.GetPiece(At("a8")).HasMoved);
         Assert.Equal(promotion, game.History[^1].PromotionType);
         Assert.Equal(0, game.HalfMoveClock);
     }

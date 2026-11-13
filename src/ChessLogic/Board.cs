@@ -9,7 +9,7 @@ namespace ChessLogic
 {
     public class Board
     {
-        private readonly Piece[,] pieces = new Piece[8, 8];
+        private readonly Piece?[,] pieces = new Piece?[8, 8];
 
         private readonly Dictionary<Player, Position?> pawnSkipPosition = new Dictionary<Player, Position?>
         {
@@ -18,13 +18,13 @@ namespace ChessLogic
         };
 
         //get or set a piece onto a position on the board by providing the row and column || by providing a Position object
-        public Piece this[int row, int col]
+        public Piece? this[int row, int col]
         {
             get { return pieces[row, col]; }
             set { pieces[row, col] = value; }
         }
 
-        public Piece this[Position pos]
+        public Piece? this[Position pos]
         {
             get { return pieces[pos.Row, pos.Column]; }
             set { pieces[pos.Row, pos.Column] = value; }
@@ -35,6 +35,11 @@ namespace ChessLogic
             Board board = new Board();
             board.AddStartingPieces();
             return board;
+        }
+
+        public Piece GetPiece(Position pos)
+        {
+            return this[pos] ?? throw new InvalidOperationException("The square is empty.");
         }
 
         private void AddStartingPieces()
@@ -90,14 +95,14 @@ namespace ChessLogic
 
         public IEnumerable<Position> PositionsOfPlayer(Player player)
         {
-            return AllPositions().Where(pos => this[pos].Colour == player);
+            return AllPositions().Where(pos => GetPiece(pos).Colour == player);
         }
 
         public bool IsInCheck(Player player)
         {
             return AllPositions()
-                .Where(pos => this[pos].Colour != player)
-                .Any(pos => this[pos].CanCaptureOpponentKing(pos, this));
+                .Where(pos => GetPiece(pos).Colour != player)
+                .Any(pos => GetPiece(pos).CanCaptureOpponentKing(pos, this));
         }
 
         public Board Copy()
@@ -105,7 +110,7 @@ namespace ChessLogic
             Board newBoard = new Board();
             foreach (Position pos in AllPositions())
             {
-                newBoard[pos] = this[pos].Copy();
+                newBoard[pos] = GetPiece(pos).Copy();
             }
             newBoard.SetPawnSkipPosition(Player.White, GetPawnSkipPosition(Player.White));
             newBoard.SetPawnSkipPosition(Player.Black, GetPawnSkipPosition(Player.Black));
@@ -128,7 +133,7 @@ namespace ChessLogic
 
             foreach (Position pos in AllPositions())
             {
-                Piece piece = this[pos];
+                Piece piece = GetPiece(pos);
                 counting.Increment(piece.Colour, piece.Type);
             }
 
@@ -178,7 +183,7 @@ namespace ChessLogic
 
         private Position FindPiece(Player colour, PieceType type)
         {
-            return PositionsOfPlayer(colour).First(Position=> this[Position].Type == type);
+            return PositionsOfPlayer(colour).First(Position=> GetPiece(Position).Type == type);
         }
     }
 }

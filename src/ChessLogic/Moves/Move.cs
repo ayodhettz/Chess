@@ -8,7 +8,7 @@
         public abstract void Execute(Board board);
         public virtual bool IsLegal(Board board)
         {
-            Player player = board[From].Colour;
+            Player player = board.GetPiece(From).Colour;
             Board copy = board.Copy();
             Execute(copy);
             return !copy.IsInCheck(player);

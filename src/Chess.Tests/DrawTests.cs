@@ -102,7 +102,7 @@ public class DrawTests
         Board board = Board.Initial();
         string original = PositionKey.Create(board, Player.White);
         Assert.NotEqual(original, PositionKey.Create(board, Player.Black));
-        board[At("h1")].HasMoved = true;
+        board.GetPiece(At("h1")).HasMoved = true;
         Assert.NotEqual(original, PositionKey.Create(board, Player.White));
     }
 

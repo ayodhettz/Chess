@@ -50,7 +50,7 @@ namespace ChessLogic
         public IEnumerable<Move> LegalMoves(Position pos)
         {
             if (IsGameOver() || pos == null || !Board.IsInside(pos) ||
-                Board.IsEmpty(pos) || Board[pos].Colour != CurrentPlayer)
+                Board.IsEmpty(pos) || Board.GetPiece(pos).Colour != CurrentPlayer)
             {
                 return Enumerable.Empty<Move>();
             }
@@ -62,7 +62,7 @@ namespace ChessLogic
         {
             EnsureActive();
             Move legalMove = FindLegalMove(move);
-            PieceType pieceType = Board[legalMove.From].Type;
+            PieceType pieceType = Board.GetPiece(legalMove.From).Type;
             PieceType? capturedType = legalMove.Type == MoveType.EnPassant
                 ? PieceType.Pawn : Board[legalMove.To]?.Type;
 
@@ -91,7 +91,7 @@ namespace ChessLogic
 
         private IEnumerable<Move> MovesFrom(Position pos)
         {
-            return Board[pos].GetMoves(pos, Board).Where(move => move.IsLegal(Board));
+            return Board.GetPiece(pos).GetMoves(pos, Board).Where(move => move.IsLegal(Board));
         }
 
         private Move FindLegalMove(Move move)
@@ -145,7 +145,7 @@ namespace ChessLogic
             EnsureActive();
             Player opponent = CurrentPlayer.Opponent();
             bool opponentHasMaterial = Board.PositionsOfPlayer(opponent)
-                .Any(pos => Board[pos].Type != PieceType.King);
+                .Any(pos => Board.GetPiece(pos).Type != PieceType.King);
             Result = opponentHasMaterial
                 ? Result.WinByResignation(opponent)
                 : Result.DrawByStalemate(EndReason.Resignation);

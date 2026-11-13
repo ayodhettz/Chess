@@ -39,4 +39,4 @@ material detection, checkmate, stalemate, move history, resignation, draw thresh
 Move generation is checked against initial-position counts of 20, 400, and 8,902 nodes and Kiwipete counts of 48 and 2,039 nodes.
 
 The tests use an STA dispatcher for WPF and do not require mouse or keyboard interaction.
-The gameplay PR can be tested before the runtime PR is merged, but merge the runtime/CI PR first so production projects also target .NET 10 and GitHub Actions runs the suite.
+Pull requests and pushes to main run the suite through GitHub Actions.

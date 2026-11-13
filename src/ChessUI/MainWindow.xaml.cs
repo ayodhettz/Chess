@@ -58,7 +58,7 @@ namespace ChessUI
             {
                 for(int col = 0; col < 8; col++)
                 {
-                    Piece piece = board[row, col];
+                    Piece? piece = board[row, col];
                     pieceImages[row, col].Source = Images.GetImage(piece);
                 }
             }

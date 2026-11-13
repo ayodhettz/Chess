@@ -82,5 +82,5 @@ internal static class TestPositions
     }
 
     private static string Key(Board board, Player player) => player + string.Join(";",
-        board.AllPositions().Select(pos => $"{pos.Row},{pos.Column},{board[pos].Type},{board[pos].Colour}"));
+        board.AllPositions().Select(pos => $"{pos.Row},{pos.Column},{board.GetPiece(pos).Type},{board.GetPiece(pos).Colour}"));
 }

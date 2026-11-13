@@ -31,7 +31,7 @@ namespace ChessLogic
 
         private bool CanCaptureAt(Position pos, Board board)
         {
-            return Board.IsInside(pos) && !board.IsEmpty(pos) && board[pos].Colour != Colour;
+            return Board.IsInside(pos) && !board.IsEmpty(pos) && board.GetPiece(pos).Colour != Colour;
         }
 
         private IEnumerable<Move> GetForwardMoves(Position from, Board board)
@@ -96,7 +96,7 @@ namespace ChessLogic
 
         public override bool CanCaptureOpponentKing(Position from, Board board)
         {
-            return GetCaptureMoves(from, board).Any(move => board[move.To] is King && board[move.To].Colour != Colour);
+            return GetCaptureMoves(from, board).Any(move => board[move.To] is King && board.GetPiece(move.To).Colour != Colour);
         }
 
         private static IEnumerable<Move> PromotionMoves(Position from, Position to)

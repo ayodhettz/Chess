@@ -33,7 +33,7 @@ namespace ChessLogic
 
         public override void Execute(Board board)
         {
-            Piece pawn = board[From];
+            Piece pawn = board.GetPiece(From);
             board[From] = null;
 
             Piece promotedPiece = CreatePromotedPiece(pawn.Colour);
