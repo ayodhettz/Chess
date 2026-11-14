@@ -8,7 +8,7 @@ An invalid position shows an error and leaves the current game unchanged.
 **Close** or Escape returns to the previous board, pause menu, or result menu.
 FEN controls are unavailable while choosing a promotion piece.
 
-Loading replaces the current game, clears selection and move history, and restores the
+Loading replaces the current game, clears selection, move history, and undo/redo history, and restores the
 side to move, castling rights, en passant target, half-move clock, and full-move number.
 Already terminal positions show their result immediately. Move-history numbering starts
 at the imported full-move number, including when Black moves first.

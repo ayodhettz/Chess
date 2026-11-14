@@ -10,6 +10,17 @@
         WindowStartupLocation="CenterScreen"
         Background="#101010"
         PreviewKeyDown="Window_KeyDown">
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static ApplicationCommands.Undo}"
+                        Executed="Undo_Executed" CanExecute="Undo_CanExecute"/>
+        <CommandBinding Command="{x:Static ApplicationCommands.Redo}"
+                        Executed="Redo_Executed" CanExecute="Redo_CanExecute"/>
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="{x:Static ApplicationCommands.Undo}"/>
+        <KeyBinding Key="Y" Modifiers="Control" Command="{x:Static ApplicationCommands.Redo}"/>
+        <KeyBinding Key="Z" Modifiers="Control+Shift" Command="{x:Static ApplicationCommands.Redo}"/>
+    </Window.InputBindings>
     
     <Grid Margin="12">
         <Grid.ColumnDefinitions>
@@ -70,6 +81,12 @@
                     <Button Content="Resign" Style="{StaticResource ButtonStyle}"
                             Click="Resign_Click" Margin="0,8,0,0"/>
                 </StackPanel>
+                <UniformGrid Rows="1" Columns="2" Margin="0,8,0,0">
+                    <Button x:Name="UndoButton" Content="Undo" Style="{StaticResource ButtonStyle}"
+                            Click="Undo_Click" ToolTip="Undo (Ctrl+Z)" Margin="0,0,4,0"/>
+                    <Button x:Name="RedoButton" Content="Redo" Style="{StaticResource ButtonStyle}"
+                            Click="Redo_Click" ToolTip="Redo (Ctrl+Y or Ctrl+Shift+Z)" Margin="4,0,0,0"/>
+                </UniformGrid>
                 <Button x:Name="FenPositionButton" Content="FEN position…" Style="{StaticResource ButtonStyle}"
                         Click="FenPosition_Click" Margin="0,8,0,0"/>
                 <TextBlock Text="Escape: pause / continue" Style="{StaticResource TextStyle}"

@@ -15,6 +15,213 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 {
     [Fact]
+    public void UndoButtonAndRedoCommandRestoreTheVisiblePosition() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            SetGame(window, game);
+            Assert.False(ApplicationCommands.Undo.CanExecute(null, window));
+            Assert.False(ApplicationCommands.Redo.CanExecute(null, window));
+            Call(window, "HandleMove", FindMove(game, "e2", "e4"));
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
+
+            ((Button)window.FindName("UndoButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            Assert.Equal(Fen.InitialPosition, game.ToFen());
+            Assert.Empty(((ListBox)window.FindName("HistoryList")).Items.Cast<object>());
+            Assert.Equal("White to move", ((TextBlock)window.FindName("StatusText")).Text);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.True(((Button)window.FindName("RedoButton")).IsEnabled);
+            Image[,] images = (Image[,])Field(window, "pieceImages");
+            Assert.NotNull(images[6, 4].Source);
+            Assert.Null(images[4, 4].Source);
+
+            ApplicationCommands.Redo.Execute(null, window);
+
+            Assert.Equal("Black to move", ((TextBlock)window.FindName("StatusText")).Text);
+            Assert.Single(game.History);
+            Assert.NotNull(images[4, 4].Source);
+            Assert.Null(images[6, 4].Source);
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
+            SavePreview(window, "CHESS_UNDO_SCREENSHOT_PATH");
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void UndoClearsSelectionAndANewMoveReplacesTheDisplayedFuture() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); Play(game, "e7", "e5");
+            SetGame(window, game);
+            Call(window, "OnFromPositionSelected", At("g1"));
+            ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked = true;
+            ((TextBlock)window.FindName("ClaimHintText")).Text = "Old claim hint";
+
+            ApplicationCommands.Undo.Execute(null, window);
+
+            Assert.Null(Field(window, "selectedPosition"));
+            Assert.Empty((Dictionary<Position, Move>)Field(window, "moveCache"));
+            Assert.False(((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked);
+            Assert.Empty(((TextBlock)window.FindName("ClaimHintText")).Text);
+            Assert.Single(((ListBox)window.FindName("HistoryList")).Items.Cast<object>());
+
+            Call(window, "HandleMove", FindMove(game, "c7", "c5"));
+
+            ListBox history = (ListBox)window.FindName("HistoryList");
+            Assert.Equal(2, history.Items.Count);
+            Assert.Contains("c7-c5", (string)history.Items[1]);
+            Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
+        }
+        finally { window.Close(); }
+    });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResultMenusAllowUndoAndReturnWhenRedone(bool checkmate) => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            if (checkmate)
+            {
+                Play(game, "f2", "f3"); Play(game, "e7", "e5"); Play(game, "g2", "g4");
+            }
+            SetGame(window, game);
+            string before = game.ToFen();
+            if (checkmate) Call(window, "HandleMove", FindMove(game, "d8", "h4"));
+            else Call(window, "Resign_Click", window, new RoutedEventArgs());
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+
+            ApplicationCommands.Undo.Execute(null, window);
+
+            Assert.Null(Menu(window).Content);
+            Assert.Null(game.Result);
+            Assert.Equal(before, game.ToFen());
+
+            ((Button)window.FindName("RedoButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            Assert.Equal(checkmate ? EndReason.Checkmate : EndReason.Resignation, game.Result!.Reason);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void HistoryNavigationClosesThePauseMenu() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4");
+            SetGame(window, game);
+            Escape(window);
+            Assert.IsType<PauseMenu>(Menu(window).Content);
+            ApplicationCommands.Undo.Execute(null, window);
+            Assert.Null(Menu(window).Content);
+            Assert.Equal(Fen.InitialPosition, game.ToFen());
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void PendingPromotionBlocksHistoryNavigation() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse("4k1n1/P7/8/8/8/8/8/4K1N1 b - - 0 42");
+            Play(game, "g8", "f6");
+            SetGame(window, game);
+            string before = game.ToFen();
+            Call(window, "HandlePromotion", At("a7"), At("a8"));
+            object promotion = Menu(window).Content;
+            Assert.True(game.CanUndo);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(ApplicationCommands.Undo.CanExecute(null, window));
+            Call(window, "Undo_Click", window, new RoutedEventArgs());
+            Assert.Same(promotion, Menu(window).Content);
+            Assert.Equal(before, game.ToFen());
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void FenEditorKeepsNativeTextUndoAndRedo() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4");
+            SetGame(window, game);
+            string before = game.ToFen();
+            Call(window, "FenPosition_Click", window, new RoutedEventArgs());
+            FenMenu menu = Assert.IsType<FenMenu>(Menu(window).Content);
+            TextBox text = (TextBox)menu.FindName("FenTextBox");
+            FrameworkElement root = (FrameworkElement)window.Content;
+            root.Measure(new Size(844, 600));
+            root.Arrange(new Rect(0, 0, 844, 600));
+            root.UpdateLayout();
+            string original = text.Text;
+            text.IsUndoEnabled = false;
+            text.IsUndoEnabled = true;
+            text.AppendText(" ");
+            Assert.True(ApplicationCommands.Undo.CanExecute(null, text));
+            ApplicationCommands.Undo.Execute(null, text);
+            Assert.Equal(original, text.Text);
+            ApplicationCommands.Redo.Execute(null, text);
+            Assert.Equal(original + " ", text.Text);
+            Assert.Equal(before, game.ToFen());
+            Assert.Single(game.History);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Escape(window);
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+        }
+        finally { window.Close(); }
+    });
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestartAndFenImportDiscardNavigationHistory(bool import) => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); Play(game, "e7", "e5"); game.Undo();
+            SetGame(window, game);
+            Assert.True(game.CanUndo && game.CanRedo);
+            if (import)
+            {
+                Call(window, "FenPosition_Click", window, new RoutedEventArgs());
+                FenMenu menu = Assert.IsType<FenMenu>(Menu(window).Content);
+                ((TextBox)menu.FindName("FenTextBox")).Text = Fen.InitialPosition;
+                Call(menu, "Load_Click", menu, new RoutedEventArgs());
+            }
+            else Call(window, "RestartGame");
+            GameState replacement = (GameState)Field(window, "gameState");
+            Assert.False(replacement.CanUndo);
+            Assert.False(replacement.CanRedo);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
     public void FenDialogExportsTheCurrentPosition() => fixture.Run(() =>
     {
         MainWindow window = new();
