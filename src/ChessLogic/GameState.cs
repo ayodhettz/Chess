@@ -12,6 +12,8 @@ namespace ChessLogic
     {
         private readonly List<MoveRecord> history = new();
         private readonly Dictionary<string, int> positionCounts = new();
+        private readonly Stack<Snapshot> undoStates = new();
+        private readonly Stack<Snapshot> redoStates = new();
 
         public Board Board { get; }
         public Player CurrentPlayer { get; private set; }
@@ -20,6 +22,8 @@ namespace ChessLogic
         public int HalfMoveClock { get; private set; }
         public BigInteger FullMoveNumber { get; private set; }
         public int CurrentPositionRepetitions { get; private set; }
+        public bool CanUndo => undoStates.Count > 0;
+        public bool CanRedo => redoStates.Count > 0;
 
         public GameState(Board board, Player currentPlayer)
             : this(board, currentPlayer, 0, BigInteger.One)
@@ -65,6 +69,7 @@ namespace ChessLogic
             PieceType pieceType = Board.GetPiece(legalMove.From).Type;
             PieceType? capturedType = legalMove.Type == MoveType.EnPassant
                 ? PieceType.Pawn : Board[legalMove.To]?.Type;
+            Snapshot previous = CaptureState();
 
             HalfMoveClock = pieceType == PieceType.Pawn || capturedType.HasValue
                 ? 0 : HalfMoveClock + 1;
@@ -77,6 +82,7 @@ namespace ChessLogic
             CurrentPlayer = CurrentPlayer.Opponent();
             RecordPosition();
             CheckForGameEnd();
+            RecordUndo(previous);
         }
 
         public IEnumerable<Move> AllLegalMoves(Player player)
@@ -116,7 +122,9 @@ namespace ChessLogic
             EnsureActive();
             EndReason reason = ClaimReason(intendedMove)
                 ?? throw new InvalidOperationException("No draw can be claimed in this position.");
+            Snapshot previous = CaptureState();
             Result = Result.DrawByStalemate(reason);
+            RecordUndo(previous);
         }
 
         private EndReason? ClaimReason(Move? intendedMove)
@@ -143,13 +151,61 @@ namespace ChessLogic
         public void Resign()
         {
             EnsureActive();
+            Snapshot previous = CaptureState();
             Player opponent = CurrentPlayer.Opponent();
             bool opponentHasMaterial = Board.PositionsOfPlayer(opponent)
                 .Any(pos => Board.GetPiece(pos).Type != PieceType.King);
             Result = opponentHasMaterial
                 ? Result.WinByResignation(opponent)
                 : Result.DrawByStalemate(EndReason.Resignation);
+            RecordUndo(previous);
         }
+
+        public bool Undo()
+        {
+            if (!CanUndo) return false;
+            redoStates.Push(CaptureState());
+            RestoreState(undoStates.Pop());
+            return true;
+        }
+
+        public bool Redo()
+        {
+            if (!CanRedo) return false;
+            undoStates.Push(CaptureState());
+            RestoreState(redoStates.Pop());
+            return true;
+        }
+
+        private Snapshot CaptureState()
+        {
+            return new Snapshot(Board.Copy(), CurrentPlayer, Result, HalfMoveClock, FullMoveNumber,
+                CurrentPositionRepetitions, history.ToArray(), new Dictionary<string, int>(positionCounts));
+        }
+
+        private void RecordUndo(Snapshot previous)
+        {
+            undoStates.Push(previous);
+            redoStates.Clear();
+        }
+
+        private void RestoreState(Snapshot state)
+        {
+            // Restore copies so future moves cannot mutate a saved state.
+            Board.RestoreFrom(state.Board);
+            CurrentPlayer = state.Player;
+            Result = state.Result;
+            HalfMoveClock = state.HalfMoveClock;
+            FullMoveNumber = state.FullMoveNumber;
+            CurrentPositionRepetitions = state.Repetitions;
+            history.Clear();
+            history.AddRange(state.History);
+            positionCounts.Clear();
+            foreach (var entry in state.PositionCounts) positionCounts.Add(entry.Key, entry.Value);
+        }
+
+        private sealed record Snapshot(Board Board, Player Player, Result? Result, int HalfMoveClock,
+            BigInteger FullMoveNumber, int Repetitions, MoveRecord[] History, Dictionary<string, int> PositionCounts);
 
         private void EnsureActive()
         {

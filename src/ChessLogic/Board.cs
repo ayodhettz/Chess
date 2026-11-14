@@ -108,13 +108,21 @@ namespace ChessLogic
         public Board Copy()
         {
             Board newBoard = new Board();
-            foreach (Position pos in AllPositions())
-            {
-                newBoard[pos] = GetPiece(pos).Copy();
-            }
-            newBoard.SetPawnSkipPosition(Player.White, GetPawnSkipPosition(Player.White));
-            newBoard.SetPawnSkipPosition(Player.Black, GetPawnSkipPosition(Player.Black));
+            newBoard.RestoreFrom(this);
             return newBoard;
+        }
+
+        internal void RestoreFrom(Board source)
+        {
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    this[row, col] = source[row, col]?.Copy();
+                }
+            }
+            SetPawnSkipPosition(Player.White, source.GetPawnSkipPosition(Player.White));
+            SetPawnSkipPosition(Player.Black, source.GetPawnSkipPosition(Player.Black));
         }
 
         public Position? GetPawnSkipPosition(Player player)
