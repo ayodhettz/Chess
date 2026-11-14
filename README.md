@@ -30,6 +30,7 @@ Press **Escape** to pause, continue, or restart.
 - Castling, en passant, and all four promotion choices
 - Checkmate, stalemate, and basic insufficient-material detection
 - Pause, restart, and rematch menus
+- [Undo and redo](docs/undo-redo.md), including finished games and special moves
 
 See [gameplay controls and validation](docs/gameplay.md) for draw claims, move history, resignation, and tests.
 
