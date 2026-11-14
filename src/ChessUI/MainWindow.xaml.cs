@@ -281,6 +281,14 @@ namespace ChessUI
             ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
             ClaimDrawButton.IsEnabled = gameState.CanClaimDraw();
             FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
+            UndoButton.IsEnabled = CanNavigateHistory() && gameState.CanUndo;
+            RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
+            CommandManager.InvalidateRequerySuggested();
+
+            while (HistoryList.Items.Count > gameState.History.Count)
+            {
+                HistoryList.Items.RemoveAt(HistoryList.Items.Count - 1);
+            }
 
             while (HistoryList.Items.Count < gameState.History.Count)
             {
@@ -288,8 +296,57 @@ namespace ChessUI
                 MoveRecord move = gameState.History[index];
                 HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move}");
             }
-            if (gameState.History.Count == 0) HistoryList.Items.Clear();
             if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
+        }
+
+        private bool CanNavigateHistory()
+        {
+            return MenuContainer.Content is null or PauseMenu or GameOverMenu;
+        }
+
+        private void NavigateHistory(bool redo)
+        {
+            if (!CanNavigateHistory()) return;
+            bool changed = redo ? gameState.Redo() : gameState.Undo();
+            if (!changed) return;
+
+            MenuContainer.Content = null;
+            selectedPosition = null;
+            ClearHighlights();
+            moveCache.Clear();
+            ClaimWithMoveCheckBox.IsChecked = false;
+            ClaimHintText.Text = "";
+            DrawBoard(gameState.Board);
+            SetCursor(gameState.CurrentPlayer);
+            UpdateStatus();
+            if (gameState.IsGameOver()) ShowGameOverMenu();
+        }
+
+        private void Undo_Click(object sender, RoutedEventArgs e) => NavigateHistory(false);
+        private void Redo_Click(object sender, RoutedEventArgs e) => NavigateHistory(true);
+
+        private void Undo_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            NavigateHistory(false);
+            e.Handled = true;
+        }
+
+        private void Redo_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            NavigateHistory(true);
+            e.Handled = true;
+        }
+
+        private void Undo_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = CanNavigateHistory() && gameState.CanUndo;
+            e.Handled = true;
+        }
+
+        private void Redo_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = CanNavigateHistory() && gameState.CanRedo;
+            e.Handled = true;
         }
 
         private void ClaimDraw_Click(object sender, RoutedEventArgs e)
