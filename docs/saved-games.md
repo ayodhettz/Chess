@@ -18,5 +18,8 @@ invalid claims, bad promotion choices, and invalid undo cursors are rejected. Sa
 the active timeline, not variations discarded by making a new move after undo. Direct board edits
 are not tracked. Use normal game actions and FEN loading for positions that need to be saved.
 
+Version 1 files remain supported. Files containing PGN metadata or recorded PGN results use
+version 2; those headers and undoable recorded outcomes survive complete-game saving as well.
+
 The code APIs are `GameSave.Serialize` / `GameSave.Deserialize` for text and `GameFiles.Save` /
 `GameFiles.Load` for files. Loading returns a new `GameState`; it never mutates an existing one.

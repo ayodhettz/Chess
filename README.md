@@ -30,6 +30,7 @@ Press **Escape** to pause, continue, or restart.
 - Castling, en passant, and all four promotion choices
 - Checkmate, stalemate, and basic insufficient-material detection
 - Pause, restart, and rematch menus
+- [SAN notation and PGN import/export](docs/pgn.md) for exchanging games with other tools
 - [Save and resume complete games](docs/saved-games.md), including undo/redo history
 - [Undo and redo](docs/undo-redo.md), including finished games and special moves
 

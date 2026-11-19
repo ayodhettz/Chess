@@ -1,6 +1,6 @@
 # Undo and redo
 
-![Undo and redo controls beside the board](undo-redo.png)
+![Undo and redo controls beside the board](pgn.png)
 
 Use **Undo** or **Ctrl+Z** to take back the last action. Use **Redo**, **Ctrl+Y**, or
 **Ctrl+Shift+Z** to restore it. Each move is one action, including castling, en passant,
