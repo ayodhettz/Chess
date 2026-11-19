@@ -22,7 +22,7 @@ In the FEN text box, undo and redo continue to edit text instead of moving throu
 Playing a new move, resigning, or claiming a draw after undo discards the redo branch.
 Rejected moves and invalid draw claims leave it intact. Restarting or loading FEN creates
 a new timeline. A terminal position loaded directly from FEN has no earlier move to undo.
-Navigation history stays in memory and is not included in FEN or saved to disk.
+Navigation history is not included in FEN. Use [complete-game saves](saved-games.md) to preserve it on disk.
 
 ## Code API
 
