@@ -15,6 +15,65 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 {
     [Fact]
+    public void ImportedPgnUsesSanInTheHistoryAndCanBeExported() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        File.WriteAllText(folder.File, "1.e4 e5 2.Nf3 Nc6 3.Bb5 a6 4.Ba4 Nf6 5.O-O Be7 *");
+        MainWindow window = new();
+        try
+        {
+            Call(window, "ImportPgnFromFile", folder.File);
+            GameState game = (GameState)Field(window, "gameState");
+            ListBox history = (ListBox)window.FindName("HistoryList");
+            Assert.Equal("2. White: Nf3", history.Items[2]);
+            Assert.Equal("5. White: O-O", history.Items[8]);
+            Call(window, "ExportPgnToFile", folder.File);
+            Assert.Equal(game.ToFen(), Pgn.Load(folder.File).ToFen());
+            SavePreview(window, "CHESS_PGN_SCREENSHOT_PATH");
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void InvalidPgnLeavesTheGameAndMenuUntouched() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        File.WriteAllText(folder.File, "1.e5 *");
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            SetGame(window, game); Escape(window);
+            object menu = Menu(window).Content;
+            Call(window, "ImportPgnFromFile", folder.File);
+            Assert.Same(game, Field(window, "gameState"));
+            Assert.Same(menu, Menu(window).Content);
+            Assert.Contains("Could not import", ((TextBlock)window.FindName("FileStatusText")).Text);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void ImportedRecordedResultShowsAResultMenuAndCanBeUndone() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        File.WriteAllText(folder.File, "1.e4 1/2-1/2");
+        MainWindow window = new();
+        try
+        {
+            Call(window, "ImportPgnFromFile", folder.File);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            GameState game = (GameState)Field(window, "gameState");
+            Assert.Equal(EndReason.RecordedResult, game.Result!.Reason);
+            ApplicationCommands.Undo.Execute(null, window);
+            Assert.Null(game.Result);
+            Assert.Null(Menu(window).Content);
+            Assert.Single(game.History);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
     public void SavedGameLoadsItsRedoBranchAndClearsUiSelection() => fixture.Run(() =>
     {
         using TempGameFolder folder = new();
@@ -66,6 +125,8 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Call(window, "HandlePromotion", At("a7"), At("a8"));
             Assert.False(((MenuItem)window.FindName("SaveGameMenuItem")).IsEnabled);
             Assert.False(((MenuItem)window.FindName("LoadGameMenuItem")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("ImportPgnMenuItem")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("ExportPgnMenuItem")).IsEnabled);
         }
         finally { window.Close(); }
     });
@@ -133,7 +194,7 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 
             ListBox history = (ListBox)window.FindName("HistoryList");
             Assert.Equal(2, history.Items.Count);
-            Assert.Contains("c7-c5", (string)history.Items[1]);
+            Assert.Contains("Black: c5", (string)history.Items[1]);
             Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
         }
         finally { window.Close(); }

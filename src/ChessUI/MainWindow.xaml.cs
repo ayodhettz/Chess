@@ -300,6 +300,43 @@ namespace ChessUI
             FileStatusText.Visibility = Visibility.Visible;
         }
 
+        private void ImportPgn_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CanNavigateHistory()) return;
+            OpenFileDialog dialog = new() { Filter = "PGN games (*.pgn)|*.pgn", CheckFileExists = true };
+            if (dialog.ShowDialog(this) == true) ImportPgnFromFile(dialog.FileName);
+        }
+
+        private void ExportPgn_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CanNavigateHistory()) return;
+            SaveFileDialog dialog = new() { Filter = "PGN games (*.pgn)|*.pgn", DefaultExt = ".pgn", AddExtension = true };
+            if (dialog.ShowDialog(this) == true) ExportPgnToFile(dialog.FileName);
+        }
+
+        private void ImportPgnFromFile(string path)
+        {
+            if (!CanNavigateHistory()) return;
+            try
+            {
+                GameState loaded = Pgn.Load(path);
+                MenuContainer.Content = null;
+                LoadGame(loaded);
+                if (loaded.IsGameOver()) ShowGameOverMenu();
+                SetFileStatus("PGN loaded (main line).");
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+            { SetFileStatus($"Could not import PGN: {error.Message}"); }
+        }
+
+        private void ExportPgnToFile(string path)
+        {
+            if (!CanNavigateHistory()) return;
+            try { Pgn.Save(path, gameState); SetFileStatus("PGN exported (main line)."); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+            { SetFileStatus($"Could not export PGN: {error.Message}"); }
+        }
+
         private void FenPosition_Click(object sender, RoutedEventArgs e)
         {
             if (MenuContainer.Content is PromotionMenu or FenMenu) return;
@@ -331,6 +368,8 @@ namespace ChessUI
             RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
             SaveGameMenuItem.IsEnabled = CanNavigateHistory();
             LoadGameMenuItem.IsEnabled = CanNavigateHistory();
+            ImportPgnMenuItem.IsEnabled = CanNavigateHistory();
+            ExportPgnMenuItem.IsEnabled = CanNavigateHistory();
             CommandManager.InvalidateRequerySuggested();
 
             while (HistoryList.Items.Count > gameState.History.Count)
@@ -342,7 +381,7 @@ namespace ChessUI
             {
                 int index = HistoryList.Items.Count;
                 MoveRecord move = gameState.History[index];
-                HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move}");
+                HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move.San}");
             }
             if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
         }
