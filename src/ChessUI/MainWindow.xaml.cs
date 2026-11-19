@@ -362,7 +362,22 @@ namespace ChessUI
             StatusText.Text = gameState.IsGameOver() ? "Game over" :
                 $"{gameState.CurrentPlayer} to move" + (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
             ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
-            ClaimDrawButton.IsEnabled = gameState.CanClaimDraw();
+            bool claimNow = gameState.CanClaimDraw();
+            bool claimWithMove = !claimNow && gameState.CanClaimDrawWithIntendedMove();
+            ClaimDrawButton.Visibility = claimNow ? Visibility.Visible : Visibility.Collapsed;
+            ClaimDrawButton.IsEnabled = claimNow;
+            ClaimWithMoveCheckBox.Visibility = claimWithMove ? Visibility.Visible : Visibility.Collapsed;
+            ClaimHintText.Visibility = (claimNow || claimWithMove) && !string.IsNullOrEmpty(ClaimHintText.Text)
+                ? Visibility.Visible : Visibility.Collapsed;
+            bool pendingOffer = gameState.DrawOfferedBy != null;
+            OfferDrawButton.Visibility = !pendingOffer && !gameState.IsGameOver() ? Visibility.Visible : Visibility.Collapsed;
+            OfferDrawButton.IsEnabled = gameState.CanOfferDraw;
+            OfferDrawButton.ToolTip = gameState.FullMoveNumber < 2 ? "Available after both players have made a move." : "Offer a draw to your opponent.";
+            DrawOfferPanel.Visibility = pendingOffer ? Visibility.Visible : Visibility.Collapsed;
+            if (gameState.DrawOfferedBy is Player offeredBy)
+            {
+                DrawOfferText.Text = $"{offeredBy} offers a draw.\n{offeredBy.Opponent()}: accept or decline.";
+            }
             FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
             UndoButton.IsEnabled = CanNavigateHistory() && gameState.CanUndo;
             RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
@@ -452,6 +467,29 @@ namespace ChessUI
             ClearHighlights();
             selectedPosition = null;
             ShowGameOverMenu();
+        }
+
+        private void OfferDraw_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsMenuOnScreen() || !gameState.CanOfferDraw) return;
+            gameState.OfferDraw();
+            UpdateStatus();
+        }
+
+        private void AcceptDraw_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsMenuOnScreen() || gameState.DrawOfferedBy is not Player offeredBy) return;
+            gameState.AcceptDraw(offeredBy.Opponent());
+            selectedPosition = null;
+            ClearHighlights();
+            ShowGameOverMenu();
+        }
+
+        private void DeclineDraw_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsMenuOnScreen() || gameState.DrawOfferedBy is not Player offeredBy) return;
+            gameState.DeclineDraw(offeredBy.Opponent());
+            UpdateStatus();
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)

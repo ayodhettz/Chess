@@ -93,6 +93,18 @@
                     <Button x:Name="ClaimDrawButton" Content="Claim draw"
                             Style="{StaticResource ButtonStyle}" Click="ClaimDraw_Click"
                             ToolTip="Claim a draw by repetition or the fifty-move rule."/>
+                    <Button x:Name="OfferDrawButton" Content="Offer draw" Style="{StaticResource ButtonStyle}"
+                            Click="OfferDraw_Click" Margin="0,0,0,8" ToolTipService.ShowOnDisabled="True"/>
+                    <StackPanel x:Name="DrawOfferPanel" Margin="0,0,0,8" Visibility="Collapsed">
+                        <TextBlock x:Name="DrawOfferText" Foreground="{StaticResource TextColor}" TextWrapping="Wrap"
+                                   Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
+                        <UniformGrid Rows="1" Columns="2">
+                            <Button x:Name="AcceptDrawButton" Content="Accept" Style="{StaticResource ButtonStyle}"
+                                    Click="AcceptDraw_Click" Margin="0,0,4,0"/>
+                            <Button x:Name="DeclineDrawButton" Content="Decline" Style="{StaticResource ButtonStyle}"
+                                    Click="DeclineDraw_Click" Margin="4,0,0,0"/>
+                        </UniformGrid>
+                    </StackPanel>
                     <Button Content="Resign" Style="{StaticResource ButtonStyle}"
                             Click="Resign_Click" Margin="0,8,0,0"/>
                 </StackPanel>

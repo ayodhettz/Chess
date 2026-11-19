@@ -15,6 +15,106 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 {
     [Fact]
+    public void ClaimControlsAppearOnlyForCurrentOrIntendedClaims() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            Assert.Equal(Visibility.Collapsed, ((Button)window.FindName("ClaimDrawButton")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((TextBlock)window.FindName("ClaimHintText")).Visibility);
+            SavePreview(window, "CHESS_DRAW_NORMAL_PATH");
+
+            GameState intended = Fen.Parse(Fen.InitialPosition.Replace("0 1", "99 42"));
+            SetGame(window, intended);
+            Assert.Equal(Visibility.Visible, ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((Button)window.FindName("ClaimDrawButton")).Visibility);
+            ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked = true;
+            string before = intended.ToFen();
+            Call(window, "HandleMove", FindMove(intended, "e2", "e4"));
+            Assert.Equal(before, intended.ToFen());
+            Assert.Equal(Visibility.Visible, ((TextBlock)window.FindName("ClaimHintText")).Visibility);
+
+            ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked = false;
+            SetGame(window, Fen.Parse(Fen.InitialPosition.Replace("0 1", "100 42")));
+            Assert.Equal(Visibility.Visible, ((Button)window.FindName("ClaimDrawButton")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).Visibility);
+            Call(window, "ClaimDraw_Click", window, new RoutedEventArgs());
+            Assert.Equal(Visibility.Collapsed, ((Button)window.FindName("ClaimDrawButton")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).Visibility);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void IntendedRepetitionClaimsRemainDiscoverable() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            KnightCycle(game);
+            Play(game, "g1", "f3"); Play(game, "g8", "f6"); Play(game, "f3", "g1");
+            SetGame(window, game);
+            Assert.Equal(Visibility.Visible, ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).Visibility);
+            Assert.Equal(Visibility.Collapsed, ((Button)window.FindName("ClaimDrawButton")).Visibility);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void OffersCanBeAcceptedUndoneAndDeclinedThroughTheUi() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            Assert.False(((Button)window.FindName("OfferDrawButton")).IsEnabled);
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); Play(game, "e7", "e5"); SetGame(window, game);
+            ((Button)window.FindName("OfferDrawButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(Player.White, game.DrawOfferedBy);
+            Assert.Equal(Visibility.Visible, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            Assert.Contains("Black", ((TextBlock)window.FindName("DrawOfferText")).Text);
+            SavePreview(window, "CHESS_DRAW_OFFER_PATH");
+            ((Button)window.FindName("AcceptDrawButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(EndReason.DrawAgreement, game.Result!.Reason);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            Assert.Equal(Visibility.Collapsed, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            ApplicationCommands.Undo.Execute(null, window);
+            Assert.Null(game.Result);
+            Assert.Equal(Visibility.Visible, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            ((Button)window.FindName("DeclineDrawButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Null(game.DrawOfferedBy);
+            Assert.Equal(Visibility.Collapsed, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            Assert.True(((Button)window.FindName("OfferDrawButton")).IsEnabled);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void OpponentsMoveDismissesTheOfferAndLoadingRestoresIt() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); Play(game, "e7", "e5"); game.OfferDraw();
+            SetGame(window, game);
+            Call(window, "HandleMove", FindMove(game, "g1", "f3"));
+            Call(window, "SaveGameToFile", folder.File);
+            Call(window, "HandleMove", FindMove(game, "g8", "f6"));
+            Assert.Equal(Visibility.Collapsed, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            Call(window, "LoadGameFromFile", folder.File);
+            GameState loaded = (GameState)Field(window, "gameState");
+            Assert.Equal(Player.White, loaded.DrawOfferedBy);
+            Assert.Equal(Visibility.Visible, ((StackPanel)window.FindName("DrawOfferPanel")).Visibility);
+            Assert.Contains("Black", ((TextBlock)window.FindName("DrawOfferText")).Text);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
     public void ImportedPgnUsesSanInTheHistoryAndCanBeExported() => fixture.Run(() =>
     {
         using TempGameFolder folder = new();
