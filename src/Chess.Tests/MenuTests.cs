@@ -15,6 +15,62 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 {
     [Fact]
+    public void SavedGameLoadsItsRedoBranchAndClearsUiSelection() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); Play(game, "e7", "e5"); game.Undo();
+            SetGame(window, game);
+            Call(window, "SaveGameToFile", folder.File);
+            Call(window, "RestartGame");
+            Call(window, "OnFromPositionSelected", At("g1"));
+            Call(window, "LoadGameFromFile", folder.File);
+            GameState loaded = (GameState)Field(window, "gameState");
+            GameSaveTests.AssertEquivalent(game, loaded);
+            Assert.Null(Field(window, "selectedPosition"));
+            Assert.True(((Button)window.FindName("RedoButton")).IsEnabled);
+            Assert.Single(((ListBox)window.FindName("HistoryList")).Items.Cast<object>());
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void InvalidGameFileLeavesThePausedGameUnchanged() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        File.WriteAllText(folder.File, "invalid");
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse(Fen.InitialPosition);
+            Play(game, "e2", "e4"); SetGame(window, game); Escape(window);
+            object menu = Menu(window).Content;
+            Call(window, "LoadGameFromFile", folder.File);
+            Assert.Same(game, Field(window, "gameState"));
+            Assert.Same(menu, Menu(window).Content);
+            Assert.Contains("Could not load", ((TextBlock)window.FindName("FileStatusText")).Text);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void SaveAndLoadAreDisabledDuringPromotion() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            SetGame(window, Fen.Parse("4k3/P7/8/8/8/8/8/4K3 w - - 0 1"));
+            Call(window, "HandlePromotion", At("a7"), At("a8"));
+            Assert.False(((MenuItem)window.FindName("SaveGameMenuItem")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("LoadGameMenuItem")).IsEnabled);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
     public void UndoButtonAndRedoCommandRestoreTheVisiblePosition() => fixture.Run(() =>
     {
         MainWindow window = new();

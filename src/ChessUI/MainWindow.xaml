@@ -23,11 +23,21 @@
     </Window.InputBindings>
     
     <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="220"/>
         </Grid.ColumnDefinitions>
-    <Viewbox Grid.Column="0">
+        <Menu Grid.ColumnSpan="2" Margin="0,0,0,8" Background="#202020" Foreground="{StaticResource TextColor}">
+            <MenuItem Header="_File">
+                <MenuItem x:Name="SaveGameMenuItem" Header="_Save game…" Click="SaveGame_Click" Foreground="#101010"/>
+                <MenuItem x:Name="LoadGameMenuItem" Header="_Load game…" Click="LoadGame_Click" Foreground="#101010"/>
+            </MenuItem>
+        </Menu>
+    <Viewbox Grid.Row="1" Grid.Column="0">
         <Grid x:Name="BoardGrid"
               Width="600"
               Height="600"
@@ -52,7 +62,7 @@
             <ContentControl x:Name="MenuContainer"/>
         </Grid>
     </Viewbox>
-        <Grid Grid.Column="1" Margin="12,0,0,0">
+        <Grid Grid.Row="1" Grid.Column="1" Margin="12,0,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -61,6 +71,8 @@
             <StackPanel Margin="0,0,0,12">
                 <TextBlock x:Name="StatusText" Style="{StaticResource TextStyle}"
                            FontSize="22" TextWrapping="Wrap"/>
+                <TextBlock x:Name="FileStatusText" TextWrapping="Wrap" Foreground="{StaticResource TextColor}"
+                           Visibility="Collapsed" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
                 <TextBlock Text="Move history" Style="{StaticResource TextStyle}"
                            FontSize="16" Margin="0,12,0,0"/>
             </StackPanel>
