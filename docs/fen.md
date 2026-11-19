@@ -42,7 +42,7 @@ consecutive run of empty squares.
 Validation checks position consistency, not whether an entire legal game can reach the position.
 Only standard chess castling is supported, not Chess960.
 
-FEN stores a position, not prior moves, repetition history, resignation, or draw claims.
+FEN stores a position, not prior moves, repetition history, resignation, draw claims, or draw agreements.
 Import starts a fresh repetition count at one. A claimed or resigned game can therefore
 be exported as a position and loaded as a new game. Use [complete-game saves](saved-games.md) to resume prior moves and results.
 

@@ -1,6 +1,6 @@
 namespace ChessLogic
 {
-    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null)
+    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null, Player? Responder = null)
     {
         internal static GameAction ForMove(string kind, Move move) =>
             new(kind, Square(move.From), Square(move.To), (move as PawnPromotion)?.newType);
@@ -17,6 +17,7 @@ namespace ChessLogic
         internal void Replay(GameState game)
         {
             if (Kind != "result" && Winner != null) throw new FormatException("Only a recorded result can specify a winner.");
+            if (Kind is not ("accept" or "decline") && Responder != null) throw new FormatException("Only a draw response can specify a responder.");
             switch (Kind)
             {
                 case "move": game.ApplyMove(Resolve(game)); break;
@@ -25,6 +26,12 @@ namespace ChessLogic
                 case "claim": game.ClaimDraw(Resolve(game)); break;
                 case "result" when From == null && To == null && Promotion == null && Winner != null:
                     game.SetRecordedResult(Winner.Value); break;
+                case "offer" when From == null && To == null && Promotion == null:
+                    game.OfferDraw(); break;
+                case "accept" when From == null && To == null && Promotion == null && Responder != null:
+                    game.AcceptDraw(Responder.Value); break;
+                case "decline" when From == null && To == null && Promotion == null && Responder != null:
+                    game.DeclineDraw(Responder.Value); break;
                 default: throw new FormatException("The saved action type is not supported.");
             }
         }

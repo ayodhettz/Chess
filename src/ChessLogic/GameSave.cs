@@ -22,7 +22,8 @@ namespace ChessLogic
             if (game.Actions.Count > MaxActions) throw new FormatException($"A save can contain at most {MaxActions} actions.");
             string text = JsonSerializer.Serialize(new Document
             {
-                Version = game.PgnTags.Count > 0 || game.Actions.Any(action => action.Kind == "result") ? 2 : 1,
+                Version = game.Actions.Any(action => action.Kind is "offer" or "accept" or "decline") ? 3 :
+                    game.PgnTags.Count > 0 || game.Actions.Any(action => action.Kind == "result") ? 2 : 1,
                 InitialFen = game.InitialFen, Actions = game.Actions.ToArray(), Cursor = game.ActionCursor,
                 Tags = game.PgnTags.Count == 0 ? null : new Dictionary<string, string>(game.PgnTags)
             }, Options);
@@ -43,12 +44,14 @@ namespace ChessLogic
             {
                 throw new FormatException("The save file contains invalid or unsupported JSON.", error);
             }
-            if (document.Version is not (1 or 2)) throw new FormatException("This save-file version is not supported.");
+            if (document.Version is not (1 or 2 or 3)) throw new FormatException("This save-file version is not supported.");
             if (document.InitialFen == null || document.Actions == null || document.Actions.Length > MaxActions ||
                 document.Cursor < 0 || document.Cursor > document.Actions.Length)
                 throw new FormatException("The save file has an invalid starting position, action list, or history cursor.");
             if (document.Version == 1 && (document.Tags != null || document.Actions.Any(action => action?.Kind == "result")))
-                throw new FormatException("PGN metadata and recorded results require save-file version 2.");
+                throw new FormatException("PGN metadata and recorded results require save-file version 2 or later.");
+            if (document.Version < 3 && document.Actions.Any(action => action?.Kind is "offer" or "accept" or "decline" || action?.Responder != null))
+                throw new FormatException("Draw offers require save-file version 3.");
 
             GameState game = Fen.Parse(document.InitialFen);
             if (document.Tags != null) game.SetPgnTags(document.Tags);

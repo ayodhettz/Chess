@@ -65,6 +65,7 @@ namespace ChessUI
                 EndReason.FivefoldRepetition => "The game ended due to fivefold repetition.",
                 EndReason.SeventyFiveMoveRule => "The game ended due to the seventy-five-move rule.",
                 EndReason.RecordedResult => "Game result recorded in the imported PGN.",
+                EndReason.DrawAgreement => "Both players agreed to a draw.",
                 _ => ""
             };
         }

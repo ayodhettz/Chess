@@ -138,6 +138,7 @@ public class GameSaveTests
         Assert.Equal(expected.CanClaimDraw(), actual.CanClaimDraw());
         Assert.Equal(expected.CanUndo, actual.CanUndo);
         Assert.Equal(expected.CanRedo, actual.CanRedo);
+        Assert.Equal(expected.DrawOfferedBy, actual.DrawOfferedBy);
         Assert.Equal(expected.History.Select(Describe), actual.History.Select(Describe));
     }
 
