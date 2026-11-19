@@ -12,10 +12,12 @@ namespace ChessLogic
         public Position To { get; }
         public PieceType? CapturedPieceType { get; }
         public PieceType? PromotionType { get; }
+        public string San { get; }
 
-        internal MoveRecord(Player player, PieceType pieceType, Move move, PieceType? capturedPieceType, BigInteger fullMoveNumber)
+        internal MoveRecord(Player player, PieceType pieceType, Move move, PieceType? capturedPieceType, BigInteger fullMoveNumber, string san)
         {
             Player = player;
+            San = san;
             FullMoveNumber = fullMoveNumber;
             PieceType = pieceType;
             MoveType = move.Type;

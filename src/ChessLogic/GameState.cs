@@ -15,6 +15,7 @@ namespace ChessLogic
         private readonly Stack<Snapshot> undoStates = new();
         private readonly Stack<Snapshot> redoStates = new();
         private readonly List<GameAction> actions = new();
+        private readonly Dictionary<string, string> pgnTags = new(StringComparer.Ordinal);
 
         public Board Board { get; }
         public Player CurrentPlayer { get; private set; }
@@ -26,6 +27,7 @@ namespace ChessLogic
         public bool CanUndo => undoStates.Count > 0;
         public bool CanRedo => redoStates.Count > 0;
         public string InitialFen { get; }
+        public IReadOnlyDictionary<string, string> PgnTags { get; }
         internal IReadOnlyList<GameAction> Actions => actions;
         internal int ActionCursor { get; private set; }
 
@@ -47,6 +49,7 @@ namespace ChessLogic
             HalfMoveClock = halfMoveClock;
             FullMoveNumber = fullMoveNumber;
             History = history.AsReadOnly();
+            PgnTags = new ReadOnlyDictionary<string, string>(pgnTags);
             RecordPosition();
             CheckForGameEnd();
             InitialFen = ToFen();
@@ -71,6 +74,7 @@ namespace ChessLogic
         {
             EnsureActive();
             Move legalMove = FindLegalMove(move);
+            string san = San.Format(this, legalMove);
             PieceType pieceType = Board.GetPiece(legalMove.From).Type;
             PieceType? capturedType = legalMove.Type == MoveType.EnPassant
                 ? PieceType.Pawn : Board[legalMove.To]?.Type;
@@ -82,7 +86,7 @@ namespace ChessLogic
             // The moving player's previous double step has now expired.
             Board.SetPawnSkipPosition(CurrentPlayer, null);
             legalMove.Execute(Board);
-            history.Add(new MoveRecord(CurrentPlayer, pieceType, legalMove, capturedType, FullMoveNumber));
+            history.Add(new MoveRecord(CurrentPlayer, pieceType, legalMove, capturedType, FullMoveNumber, san));
             if (CurrentPlayer == Player.Black) FullMoveNumber++;
             CurrentPlayer = CurrentPlayer.Opponent();
             RecordPosition();
@@ -173,6 +177,25 @@ namespace ChessLogic
             RestoreState(undoStates.Pop());
             ActionCursor--;
             return true;
+        }
+
+        internal void SetPgnTags(IEnumerable<KeyValuePair<string, string>> tags)
+        {
+            pgnTags.Clear();
+            foreach (var tag in tags)
+            {
+                Pgn.ValidateTag(tag.Key, tag.Value);
+                pgnTags.Add(tag.Key, tag.Value);
+            }
+        }
+
+        internal void SetRecordedResult(Player winner)
+        {
+            EnsureActive();
+            if (winner is not (Player.White or Player.Black or Player.None)) throw new ArgumentOutOfRangeException(nameof(winner));
+            Snapshot previous = CaptureState();
+            Result = new Result(winner, EndReason.RecordedResult);
+            RecordUndo(previous, new GameAction("result", Winner: winner));
         }
 
         public bool Redo()
