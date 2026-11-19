@@ -84,7 +84,7 @@ public class GameSaveTests
     [InlineData("{}")]
     [InlineData("[]")]
     [InlineData("not json")]
-    [InlineData("{\"version\":2,\"initialFen\":\"x\",\"actions\":[],\"cursor\":0}")]
+    [InlineData("{\"version\":99,\"initialFen\":\"x\",\"actions\":[],\"cursor\":0}")]
     [InlineData("{\"version\":1,\"initialFen\":null,\"actions\":[],\"cursor\":0}")]
     public void MalformedOrUnsupportedDocumentsAreRejected(string text)
     {
@@ -141,5 +141,5 @@ public class GameSaveTests
         Assert.Equal(expected.History.Select(Describe), actual.History.Select(Describe));
     }
 
-    private static string Describe(MoveRecord move) => $"{move.Player}/{move.FullMoveNumber}/{move.PieceType}/{move.MoveType}/{move}/{move.CapturedPieceType}/{move.PromotionType}";
+    private static string Describe(MoveRecord move) => $"{move.Player}/{move.FullMoveNumber}/{move.PieceType}/{move.MoveType}/{move}/{move.CapturedPieceType}/{move.PromotionType}/{move.San}";
 }

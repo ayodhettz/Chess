@@ -35,6 +35,9 @@
             <MenuItem Header="_File">
                 <MenuItem x:Name="SaveGameMenuItem" Header="_Save game…" Click="SaveGame_Click" Foreground="#101010"/>
                 <MenuItem x:Name="LoadGameMenuItem" Header="_Load game…" Click="LoadGame_Click" Foreground="#101010"/>
+                <Separator/>
+                <MenuItem x:Name="ImportPgnMenuItem" Header="_Import PGN…" Click="ImportPgn_Click" Foreground="#101010"/>
+                <MenuItem x:Name="ExportPgnMenuItem" Header="_Export PGN…" Click="ExportPgn_Click" Foreground="#101010"/>
             </MenuItem>
         </Menu>
     <Viewbox Grid.Row="1" Grid.Column="0">

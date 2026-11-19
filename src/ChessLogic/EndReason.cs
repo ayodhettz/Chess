@@ -15,6 +15,7 @@ namespace ChessLogic
         FiftyMoveRule,
         ThreefoldRepetition,
         SeventyFiveMoveRule,
-        FivefoldRepetition
+        FivefoldRepetition,
+        RecordedResult
     }
 }
