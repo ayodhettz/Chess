@@ -26,6 +26,8 @@ namespace ChessLogic
         public int CurrentPositionRepetitions { get; private set; }
         public bool CanUndo => undoStates.Count > 0;
         public bool CanRedo => redoStates.Count > 0;
+        public Player? DrawOfferedBy { get; private set; }
+        public bool CanOfferDraw => !IsGameOver() && DrawOfferedBy == null && FullMoveNumber >= 2;
         public string InitialFen { get; }
         public IReadOnlyDictionary<string, string> PgnTags { get; }
         internal IReadOnlyList<GameAction> Actions => actions;
@@ -80,6 +82,8 @@ namespace ChessLogic
                 ? PieceType.Pawn : Board[legalMove.To]?.Type;
             Snapshot previous = CaptureState();
 
+            if (DrawOfferedBy == CurrentPlayer.Opponent()) DrawOfferedBy = null;
+
             HalfMoveClock = pieceType == PieceType.Pawn || capturedType.HasValue
                 ? 0 : HalfMoveClock + 1;
 
@@ -91,6 +95,7 @@ namespace ChessLogic
             CurrentPlayer = CurrentPlayer.Opponent();
             RecordPosition();
             CheckForGameEnd();
+            if (IsGameOver()) DrawOfferedBy = null;
             RecordUndo(previous, GameAction.ForMove("move", legalMove));
         }
 
@@ -126,6 +131,49 @@ namespace ChessLogic
             return !IsGameOver() && ClaimReason(intendedMove).HasValue;
         }
 
+        public bool CanClaimDrawWithIntendedMove()
+        {
+            if (IsGameOver() || HalfMoveClock < 99 && !positionCounts.Values.Any(count => count >= 2)) return false;
+            return AllLegalMoves(CurrentPlayer).Any(move => CanClaimDraw(move));
+        }
+
+        public void OfferDraw()
+        {
+            EnsureActive();
+            if (!CanOfferDraw) throw new InvalidOperationException("Both players must have moved, and no draw offer may already be pending.");
+            Snapshot previous = CaptureState();
+            DrawOfferedBy = CurrentPlayer;
+            RecordUndo(previous, new GameAction("offer"));
+        }
+
+        public bool CanRespondToDrawOffer(Player player)
+        {
+            return !IsGameOver() && DrawOfferedBy is Player offeredBy && player == offeredBy.Opponent() && FullMoveNumber >= 2;
+        }
+
+        public void AcceptDraw(Player player)
+        {
+            EnsureDrawResponder(player);
+            Snapshot previous = CaptureState();
+            Result = Result.DrawByStalemate(EndReason.DrawAgreement);
+            DrawOfferedBy = null;
+            RecordUndo(previous, new GameAction("accept", Responder: player));
+        }
+
+        public void DeclineDraw(Player player)
+        {
+            EnsureDrawResponder(player);
+            Snapshot previous = CaptureState();
+            DrawOfferedBy = null;
+            RecordUndo(previous, new GameAction("decline", Responder: player));
+        }
+
+        private void EnsureDrawResponder(Player player)
+        {
+            EnsureActive();
+            if (!CanRespondToDrawOffer(player)) throw new InvalidOperationException("Only the opponent can respond to a pending draw offer.");
+        }
+
         public void ClaimDraw(Move? intendedMove = null)
         {
             EnsureActive();
@@ -133,6 +181,7 @@ namespace ChessLogic
                 ?? throw new InvalidOperationException("No draw can be claimed in this position.");
             Snapshot previous = CaptureState();
             Result = Result.DrawByStalemate(reason);
+            DrawOfferedBy = null;
             RecordUndo(previous, intendedMove == null ? new GameAction("claim") : GameAction.ForMove("claim", intendedMove));
         }
 
@@ -167,6 +216,7 @@ namespace ChessLogic
             Result = opponentHasMaterial
                 ? Result.WinByResignation(opponent)
                 : Result.DrawByStalemate(EndReason.Resignation);
+            DrawOfferedBy = null;
             RecordUndo(previous, new GameAction("resign"));
         }
 
@@ -195,6 +245,7 @@ namespace ChessLogic
             if (winner is not (Player.White or Player.Black or Player.None)) throw new ArgumentOutOfRangeException(nameof(winner));
             Snapshot previous = CaptureState();
             Result = new Result(winner, EndReason.RecordedResult);
+            DrawOfferedBy = null;
             RecordUndo(previous, new GameAction("result", Winner: winner));
         }
 
@@ -210,7 +261,7 @@ namespace ChessLogic
         private Snapshot CaptureState()
         {
             return new Snapshot(Board.Copy(), CurrentPlayer, Result, HalfMoveClock, FullMoveNumber,
-                CurrentPositionRepetitions, history.ToArray(), new Dictionary<string, int>(positionCounts));
+                CurrentPositionRepetitions, history.ToArray(), new Dictionary<string, int>(positionCounts), DrawOfferedBy);
         }
 
         private void RecordUndo(Snapshot previous, GameAction action)
@@ -231,6 +282,7 @@ namespace ChessLogic
             HalfMoveClock = state.HalfMoveClock;
             FullMoveNumber = state.FullMoveNumber;
             CurrentPositionRepetitions = state.Repetitions;
+            DrawOfferedBy = state.OfferedBy;
             history.Clear();
             history.AddRange(state.History);
             positionCounts.Clear();
@@ -238,7 +290,7 @@ namespace ChessLogic
         }
 
         private sealed record Snapshot(Board Board, Player Player, Result? Result, int HalfMoveClock,
-            BigInteger FullMoveNumber, int Repetitions, MoveRecord[] History, Dictionary<string, int> PositionCounts);
+            BigInteger FullMoveNumber, int Repetitions, MoveRecord[] History, Dictionary<string, int> PositionCounts, Player? OfferedBy);
 
         private void EnsureActive()
         {

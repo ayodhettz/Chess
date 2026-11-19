@@ -82,7 +82,9 @@ namespace ChessLogic
         public static string Format(GameState game)
         {
             ArgumentNullException.ThrowIfNull(game);
-            if (game.ActionCursor > GameSave.MaxActions) throw new FormatException("The game contains too many actions for PGN export.");
+            int exportedActions = game.History.Count + (game.Result?.Reason is EndReason.Resignation or
+                EndReason.ThreefoldRepetition or EndReason.FiftyMoveRule or EndReason.RecordedResult or EndReason.DrawAgreement ? 1 : 0);
+            if (exportedActions > GameSave.MaxActions) throw new FormatException("The game contains too many actions for PGN export.");
             Dictionary<string, string> tags = new(game.PgnTags, StringComparer.Ordinal);
             foreach (string key in Roster)
                 tags.TryAdd(key, key == "Date" ? "????.??.??" : "?");
