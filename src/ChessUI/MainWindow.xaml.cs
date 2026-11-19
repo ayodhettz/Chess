@@ -9,6 +9,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ChessLogic;
+using Microsoft.Win32;
+using System.IO;
 
 namespace ChessUI
 {
@@ -251,7 +253,51 @@ namespace ChessUI
             SetCursor(gameState.CurrentPlayer);
             ClaimWithMoveCheckBox.IsChecked = false;
             ClaimHintText.Text = "";
+            FileStatusText.Visibility = Visibility.Collapsed;
             UpdateStatus();
+        }
+
+        private void SaveGame_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CanNavigateHistory()) return;
+            SaveFileDialog dialog = new() { Filter = "Chess games (*.chess.json)|*.chess.json", DefaultExt = ".chess.json", AddExtension = true };
+            if (dialog.ShowDialog(this) == true) SaveGameToFile(dialog.FileName);
+        }
+
+        private void LoadGame_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CanNavigateHistory()) return;
+            OpenFileDialog dialog = new() { Filter = "Chess games (*.chess.json)|*.chess.json", CheckFileExists = true };
+            if (dialog.ShowDialog(this) == true) LoadGameFromFile(dialog.FileName);
+        }
+
+        private void SaveGameToFile(string path)
+        {
+            if (!CanNavigateHistory()) return;
+            try { GameFiles.Save(path, gameState); SetFileStatus("Game saved."); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+            { SetFileStatus($"Could not save game: {error.Message}"); }
+        }
+
+        private void LoadGameFromFile(string path)
+        {
+            if (!CanNavigateHistory()) return;
+            try
+            {
+                GameState loaded = GameFiles.Load(path);
+                MenuContainer.Content = null;
+                LoadGame(loaded);
+                if (loaded.IsGameOver()) ShowGameOverMenu();
+                SetFileStatus("Game loaded.");
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
+            { SetFileStatus($"Could not load game: {error.Message}"); }
+        }
+
+        private void SetFileStatus(string message)
+        {
+            FileStatusText.Text = message;
+            FileStatusText.Visibility = Visibility.Visible;
         }
 
         private void FenPosition_Click(object sender, RoutedEventArgs e)
@@ -283,6 +329,8 @@ namespace ChessUI
             FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
             UndoButton.IsEnabled = CanNavigateHistory() && gameState.CanUndo;
             RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
+            SaveGameMenuItem.IsEnabled = CanNavigateHistory();
+            LoadGameMenuItem.IsEnabled = CanNavigateHistory();
             CommandManager.InvalidateRequerySuggested();
 
             while (HistoryList.Items.Count > gameState.History.Count)

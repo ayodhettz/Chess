@@ -14,6 +14,7 @@ namespace ChessLogic
         private readonly Dictionary<string, int> positionCounts = new();
         private readonly Stack<Snapshot> undoStates = new();
         private readonly Stack<Snapshot> redoStates = new();
+        private readonly List<GameAction> actions = new();
 
         public Board Board { get; }
         public Player CurrentPlayer { get; private set; }
@@ -24,6 +25,9 @@ namespace ChessLogic
         public int CurrentPositionRepetitions { get; private set; }
         public bool CanUndo => undoStates.Count > 0;
         public bool CanRedo => redoStates.Count > 0;
+        public string InitialFen { get; }
+        internal IReadOnlyList<GameAction> Actions => actions;
+        internal int ActionCursor { get; private set; }
 
         public GameState(Board board, Player currentPlayer)
             : this(board, currentPlayer, 0, BigInteger.One)
@@ -45,6 +49,7 @@ namespace ChessLogic
             History = history.AsReadOnly();
             RecordPosition();
             CheckForGameEnd();
+            InitialFen = ToFen();
         }
 
         public static GameState FromFen(string fen) => Fen.Parse(fen);
@@ -82,7 +87,7 @@ namespace ChessLogic
             CurrentPlayer = CurrentPlayer.Opponent();
             RecordPosition();
             CheckForGameEnd();
-            RecordUndo(previous);
+            RecordUndo(previous, GameAction.ForMove("move", legalMove));
         }
 
         public IEnumerable<Move> AllLegalMoves(Player player)
@@ -124,7 +129,7 @@ namespace ChessLogic
                 ?? throw new InvalidOperationException("No draw can be claimed in this position.");
             Snapshot previous = CaptureState();
             Result = Result.DrawByStalemate(reason);
-            RecordUndo(previous);
+            RecordUndo(previous, intendedMove == null ? new GameAction("claim") : GameAction.ForMove("claim", intendedMove));
         }
 
         private EndReason? ClaimReason(Move? intendedMove)
@@ -158,7 +163,7 @@ namespace ChessLogic
             Result = opponentHasMaterial
                 ? Result.WinByResignation(opponent)
                 : Result.DrawByStalemate(EndReason.Resignation);
-            RecordUndo(previous);
+            RecordUndo(previous, new GameAction("resign"));
         }
 
         public bool Undo()
@@ -166,6 +171,7 @@ namespace ChessLogic
             if (!CanUndo) return false;
             redoStates.Push(CaptureState());
             RestoreState(undoStates.Pop());
+            ActionCursor--;
             return true;
         }
 
@@ -174,6 +180,7 @@ namespace ChessLogic
             if (!CanRedo) return false;
             undoStates.Push(CaptureState());
             RestoreState(redoStates.Pop());
+            ActionCursor++;
             return true;
         }
 
@@ -183,10 +190,13 @@ namespace ChessLogic
                 CurrentPositionRepetitions, history.ToArray(), new Dictionary<string, int>(positionCounts));
         }
 
-        private void RecordUndo(Snapshot previous)
+        private void RecordUndo(Snapshot previous, GameAction action)
         {
             undoStates.Push(previous);
             redoStates.Clear();
+            actions.RemoveRange(ActionCursor, actions.Count - ActionCursor);
+            actions.Add(action);
+            ActionCursor++;
         }
 
         private void RestoreState(Snapshot state)

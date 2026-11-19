@@ -44,7 +44,7 @@ Only standard chess castling is supported, not Chess960.
 
 FEN stores a position, not prior moves, repetition history, resignation, or draw claims.
 Import starts a fresh repetition count at one. A claimed or resigned game can therefore
-be exported as a position and loaded as a new game. Saving complete games and PGN remain separate work.
+be exported as a position and loaded as a new game. Use [complete-game saves](saved-games.md) to resume prior moves and results.
 
 ## Code API
 
