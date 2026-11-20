@@ -22,27 +22,41 @@ It replaces the default origin; use that address for invitations.
 
 After the hosting PR is merged into `main`:
 
-1. Sign in at [Render](https://dashboard.render.com/) using GitHub. Use a free/Hobby
-   workspace. If asked to choose a paid plan or add a paid resource, stop and verify
-   that you selected the Free web service.
-2. Choose **New → Blueprint**, connect `ayodhettz/Chess`, and select `main`.
-   Authorize repository access through GitHub if prompted.
-3. Render should find the root `render.yaml`. Name the Blueprint and inspect the
-   resource list: one `chess-online` web service, Docker, **Free**, Singapore.
-   The service name can change if the default name is unavailable.
-4. Deploy the Blueprint and wait for the build and health check to succeed.
-   No build/start command or secret needs to be pasted into the dashboard.
-5. Open the generated **HTTPS** URL. `/health` should return `status: ok` and
-   `protocolVersion: 2`. Create a room and open its invitation on another device
-   or an independent browser session. Play a few moves and reload one tab.
-6. Share the HTTPS invitation URL with your friend. They need only a browser.
+1. Sign in at [Render](https://dashboard.render.com/) using GitHub and use a free
+   workspace. Choose **New → Web Service**. Blueprint creation may ask for card
+   details even for this configuration, so use the manual web-service flow first.
+2. Connect `ayodhettz/Chess` and authorize repository access through GitHub.
+3. Set the following values:
 
-If your dashboard does not offer Blueprint setup, create a **Web Service** from the
-same repository: branch `main`, runtime Docker, root directory blank, Dockerfile
-`./Dockerfile`, Docker context `.`, instance **Free**, health check `/health`.
-Set auto-deploy to **After CI Checks Pass** and keep one instance. The Blueprint's
-room caps are `Rooms__MaxRooms=32` and `Rooms__MaxConnections=128`; add those two
-environment variables in the manual setup too.
+   | Setting | Value |
+   | --- | --- |
+   | Name | `chess-online` (or another available name) |
+   | Branch | `main` |
+   | Region | Singapore |
+   | Root directory | Leave blank |
+   | Runtime / Language | Docker |
+   | Dockerfile path | `./Dockerfile` |
+   | Docker build context | `.` |
+   | Instance type | **Free** |
+   | Health check path | `/health` |
+   | Auto-deploy | After CI Checks Pass |
+   | Instances | 1 |
+
+4. Add environment variables `Rooms__MaxRooms=32` and
+   `Rooms__MaxConnections=128`. Leave build/start commands at their Docker defaults.
+   No secrets are required. Confirm the service price is zero before deploying.
+   If the Free web-service flow also requires a card, stop and choose an alternative
+   free host rather than changing the budget. Account verification policies can vary.
+5. Deploy and wait for the build and health check to succeed. Open its generated
+   **HTTPS** URL. `/health` should return `status: ok` and `protocolVersion: 2`.
+6. Create a room and open its invitation on another device or an independent browser
+   session. Play a few moves and reload one tab. Share that HTTPS invitation with
+   your friend; they need only a browser.
+
+The optional `render.yaml` defines the same settings for accounts using Blueprints:
+**New → Blueprint**, select this repo and `main`, inspect the one Free service, then
+apply. It does not configure any paid resources, but Render may request a card for
+Blueprint access. No Blueprint is necessary for manual web-service deployment.
 
 ## Free-tier behavior
 
