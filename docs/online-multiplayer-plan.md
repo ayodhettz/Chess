@@ -67,7 +67,8 @@ release until the cross-client and recovery acceptance checks pass.
   room status, and result. Clients ignore snapshots older than their current revision.
 - Reject illegal, stale, out-of-turn, unseated, full-room, and expired-room operations.
   A rejected command must not alter the game. On ambiguity, fetch current state rather
-  than blindly replaying a move. Version 1 has no automatic command retry.
+  than blindly replaying a move. Version 2 adds bounded per-seat command receipts;
+  retries must keep the exact original ID, revision, action, and payload.
 - Use HTTPS/WSS for hosted play. Bound request sizes, room count, game length, and room
   lifetime. Apply origin checks to WebSockets as well as HTTP endpoints; do not use
   permissive credentialed CORS. Do not log seat credentials or put them in query strings.

@@ -22,7 +22,8 @@ namespace ChessLogic
             if (game.Actions.Count > MaxActions) throw new FormatException($"A save can contain at most {MaxActions} actions.");
             string text = JsonSerializer.Serialize(new Document
             {
-                Version = game.Actions.Any(action => action.Kind is "offer" or "accept" or "decline") ? 3 :
+                Version = game.Actions.Any(action => action.Actor != null) ? 4 :
+                    game.Actions.Any(action => action.Kind is "offer" or "accept" or "decline") ? 3 :
                     game.PgnTags.Count > 0 || game.Actions.Any(action => action.Kind == "result") ? 2 : 1,
                 InitialFen = game.InitialFen, Actions = game.Actions.ToArray(), Cursor = game.ActionCursor,
                 Tags = game.PgnTags.Count == 0 ? null : new Dictionary<string, string>(game.PgnTags)
@@ -44,7 +45,9 @@ namespace ChessLogic
             {
                 throw new FormatException("The save file contains invalid or unsupported JSON.", error);
             }
-            if (document.Version is not (1 or 2 or 3)) throw new FormatException("This save-file version is not supported.");
+            if (document.Version is not (1 or 2 or 3 or 4)) throw new FormatException("This save-file version is not supported.");
+            if (document.Version < 4 && document.Actions?.Any(action => action?.Actor != null) == true)
+                throw new FormatException("Explicit resignation actors require save-file version 4.");
             if (document.InitialFen == null || document.Actions == null || document.Actions.Length > MaxActions ||
                 document.Cursor < 0 || document.Cursor > document.Actions.Length)
                 throw new FormatException("The save file has an invalid starting position, action list, or history cursor.");

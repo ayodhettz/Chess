@@ -1,6 +1,6 @@
 namespace ChessLogic
 {
-    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null, Player? Responder = null)
+    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null, Player? Responder = null, Player? Actor = null)
     {
         internal static GameAction ForMove(string kind, Move move) =>
             new(kind, Square(move.From), Square(move.To), (move as PawnPromotion)?.newType);
@@ -17,11 +17,12 @@ namespace ChessLogic
         internal void Replay(GameState game)
         {
             if (Kind != "result" && Winner != null) throw new FormatException("Only a recorded result can specify a winner.");
+            if (Kind != "resign" && Actor != null) throw new FormatException("Only a resignation can specify an actor.");
             if (Kind is not ("accept" or "decline") && Responder != null) throw new FormatException("Only a draw response can specify a responder.");
             switch (Kind)
             {
                 case "move": game.ApplyMove(Resolve(game)); break;
-                case "resign" when From == null && To == null && Promotion == null: game.Resign(); break;
+                case "resign" when From == null && To == null && Promotion == null: game.Resign(Actor ?? game.CurrentPlayer); break;
                 case "claim" when From == null && To == null && Promotion == null: game.ClaimDraw(); break;
                 case "claim": game.ClaimDraw(Resolve(game)); break;
                 case "result" when From == null && To == null && Promotion == null && Winner != null:

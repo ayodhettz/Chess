@@ -29,7 +29,7 @@ namespace ChessUI
 
             Result result = gameState.Result ?? throw new ArgumentException("The game has not ended.", nameof(gameState));
             Winner_Text.Text = GetWinnerText(result.Winner);
-            Reason_Text.Text = GetReasonText(result.Reason, gameState.CurrentPlayer);
+            Reason_Text.Text = GetReasonText(result.Reason, result.ResignedBy ?? gameState.CurrentPlayer);
         }
 
         private static string GetWinnerText(Player winner)

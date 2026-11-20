@@ -10,10 +10,12 @@ namespace ChessLogic
     {
         public Player Winner { get; }
         public EndReason Reason { get; }
-        public Result(Player winner, EndReason reason)
+        public Player? ResignedBy { get; }
+        public Result(Player winner, EndReason reason, Player? resignedBy = null)
         {
             Winner = winner;
             Reason = reason;
+            ResignedBy = resignedBy;
         }
 
         public static Result WinByMate(Player winner)

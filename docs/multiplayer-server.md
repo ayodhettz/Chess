@@ -1,9 +1,8 @@
-# Multiplayer server foundation
+# Multiplayer server
 
-This is backend infrastructure for private browser/Windows rooms. There is no browser
-board, Windows online UI, draw/resignation command, or public deployment in this PR.
-Existing offline play remains available. The next milestone completes online game
-actions, followed by browser play, WPF integration, and hosted recovery.
+This is backend infrastructure for private browser/Windows rooms, including moves,
+draw offers/claims, resignation, and retry receipts. Browser play, Windows online UI,
+and public hosting are subsequent milestones. Existing offline play remains available.
 
 ## Run locally
 
@@ -21,7 +20,7 @@ exposing a server publicly. Browser origins must match the request's scheme and 
 Cross-origin browser connections are rejected, including WebSocket requests. Native
 clients without an Origin header can connect, but still need a room seat to act.
 
-## Protocol version 1
+## Protocol version 2
 
 JSON uses camelCase properties and string enums (`white`, `black`, `queen`, `knight`,
 `waiting`, `active`, `finished`, `closed`). `Chess.Contracts` defines the wire records.
@@ -33,6 +32,12 @@ JSON uses camelCase properties and string enums (`white`, `black`, `queen`, `kni
 | `ResumeRoom` | room code, credential | private `SeatTicket`; replaces the old connection |
 | `GetState` | none | current seated room snapshot |
 | `SubmitMove` | `{ expectedRevision, move: { from, to, promotion? } }` | accepted snapshot |
+| `SubmitCommand` | `{ id, expectedRevision, action, move? }` | `CommandResult` receipt and latest snapshot |
+
+New clients should use `SubmitCommand` for all game actions. Its `id` is a non-empty
+UUID, generated once per intent. Actions are `move`, `offerDraw`, `acceptDraw`,
+`declineDraw`, `claimDraw`, and `resign`. Only `move` and an intended-move `claimDraw`
+accept a move payload. A current-position claim has no move payload.
 
 `RoomChanged` sends snapshots to the room's currently bound player connections. A
 ticket contains the room code, seat, credential, and state. Only that method's caller
@@ -41,33 +46,53 @@ they must never enter invitation URLs, logs, or another player's snapshot.
 
 Snapshots contain protocol version, code, revision, status, each player's connected
 flag, turn, FEN, ordered SAN moves from the standard start, legal move intents, result,
-optional closure reason, and expiry time. `Result.reason` uses ChessLogic end-reason
-names, such as `Checkmate`. The winner is `null` for a draw. There are no custom FEN starts.
+optional closure reason, and expiry time. `draw` contains `offeredBy`, current-side
+`canOffer` / `canClaim` flags, and legal `claimMoves` for intended claims. `Result.reason`
+uses ChessLogic names, such as `Checkmate`. The winner is `null` for a draw; resignation
+also identifies `resignedBy`. There are no custom FEN starts. Clients must verify the
+protocol version before enabling play.
 
-The revision increases for seat binding, presence changes, and accepted moves. Clients
-must ignore older snapshots because concurrent delivery can arrive out of order.
-Include the latest revision with a move. On a stale response, obtain fresh state;
-do not automatically retry commands in version 1. Promotion must be explicit on a
+The revision increases for seat binding, presence changes, and accepted commands.
+Clients accept snapshots only for their current room and ignore older revisions,
+because concurrent delivery can arrive out of order. Include the latest revision
+with a new intent. On a stale response, obtain fresh state. Promotion must be explicit on a
 promotion move, including underpromotion, and absent on other moves.
 
-Both players must be connected to play. Disconnection reserves the seat and pauses
-move acceptance; a valid credential can resume it. A stale connection loses its seat
-binding. Room codes identify an invitation but cannot reclaim an occupied seat.
+An exact retry of an accepted `SubmitCommand` returns `wasDuplicate: true`, its original
+`appliedRevision`, and the latest `state`; it does not mutate or broadcast again. The
+last 128 accepted receipts per seat survive disconnect/resume and finished games until
+room expiry. Keep every argument unchanged when retrying, including the ID and expected
+revision. Reusing a retained ID with different arguments is `command_conflict`. Beyond
+the receipt window, the original revision is stale and the client must resync instead.
+Never recycle IDs or change the revision on a retry. Rejected commands do not consume IDs.
+The older `SubmitMove` method remains available but has no client retry receipt.
+
+Both seats must be occupied before any game action. Moves and draw offers require
+both players connected; resignation, valid claims, and offer responses may finish or
+update an active game while the opponent is offline. Moves, offers, and claims belong
+to the current side; either side can resign, and only the opponent may respond to an
+offer. Claims use the shared repetition/half-move history; intended claims end the game
+without playing their move. An opponent move implicitly declines an offer.
+
+Disconnection reserves a seat; a valid credential can resume it. A stale connection
+loses its seat binding. Room codes cannot reclaim occupied seats.
 
 Errors are SignalR `HubException` messages prefixed by stable codes: `not_seated`,
 `already_seated`, `room_unavailable`, `room_expired`, `room_full`, `invalid_credential`,
 `stale_revision`, `wrong_turn`, `invalid_move`, `opponent_unavailable`, `game_finished`,
-`capacity`, and `rate_limit`. Rejected commands leave the chess position unchanged.
+`capacity`, `rate_limit`, `game_not_started`, `invalid_command`, `invalid_action`, and
+`command_conflict`. Rejected commands leave the chess position unchanged.
 
 ## Limits and deployment boundary
 
-Defaults: 128 rooms, 512 connections, 512 plies per game, a 15-minute waiting-room
+Defaults: 128 rooms, 512 connections, 512 plies and 1,024 accepted commands per game, a 15-minute waiting-room
 lifetime, and a four-hour hard game lifetime measured from creation. Each connection
 can make 60 room calls per ten seconds. Incoming hub messages are limited to 4 KiB.
 Configure capacity and durations under `Rooms` (for example `Rooms__MaxRooms`).
 
 A game reaching its move limit closes with `move_limit`; this is a room closure,
-not a chess draw. Expiry closes with `expired` and releases seats/capacity during a
+not a chess draw. The command bound similarly closes with `command_limit`; genuine
+terminal results on the final action take precedence over these bounds. Expiry closes with `expired` and releases seats/capacity during a
 30-second cleanup sweep. Commands reject expired rooms immediately. Automatic chess
 outcomes still come from ChessLogic. Room state is in memory and lost on restart.
 
