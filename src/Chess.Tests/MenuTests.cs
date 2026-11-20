@@ -12,8 +12,108 @@ using static Chess.Tests.TestPositions;
 
 namespace Chess.Tests;
 
-public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
+[Collection("WPF")]
+public class MenuTests(WpfFixture fixture)
 {
+    [Fact]
+    public void BotPlaysTheOpeningAndRestoresControls() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = (GameState)Field(window, "gameState");
+            FinishBot(StartBot(window));
+            Assert.Single(game.History);
+            Assert.Equal(Player.Black, game.CurrentPlayer);
+            Assert.True(((StackPanel)window.FindName("ActionPanel")).IsEnabled);
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.Contains("completed depth", ((TextBlock)window.FindName("BotStatusText")).Text);
+            SavePreview(window, "CHESS_BOT_PREVIEW_PATH");
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void ClosingTheWindowCancelsPendingBotResults() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        GameState game = (GameState)Field(window, "gameState");
+        string before = GameSave.Serialize(game);
+        Task task = StartBot(window);
+        window.Close();
+        FinishBot(task);
+        Assert.Equal(before, GameSave.Serialize(game));
+    });
+
+    [Fact]
+    public void BotSearchCanBeCancelledWithoutChangingThePosition() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = (GameState)Field(window, "gameState");
+            string before = GameSave.Serialize(game);
+            Task task = StartBot(window);
+            Assert.False(((StackPanel)window.FindName("ActionPanel")).IsEnabled);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("BotMoveMenuItem")).IsEnabled);
+            Escape(window);
+            FinishBot(task);
+            Assert.Equal(before, GameSave.Serialize(game));
+            Assert.True(((MenuItem)window.FindName("BotMoveMenuItem")).IsEnabled);
+            Assert.Contains("cancelled", ((TextBlock)window.FindName("BotStatusText")).Text);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void BotMoveUsesNormalHistoryAndCanBeUndone() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse("7k/5Q2/6K1/8/8/8/8/8 w - - 0 1");
+            SetGame(window, game);
+            ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked = true;
+            FinishBot(StartBot(window));
+            Assert.Equal(EndReason.Checkmate, game.Result!.Reason);
+            Assert.Single(game.History);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            Call(window, "NavigateHistory", false);
+            Assert.False(game.IsGameOver());
+            Assert.Empty(game.History);
+            Assert.True(game.CanRedo);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void BotAcceptsDrawOffersThroughTheUi() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse("3q3k/8/8/3p4/8/8/8/K2R4 b - - 0 42");
+            game.OfferDraw(); Play(game, "h8", "h7");
+            SetGame(window, game);
+            FinishBot(StartBot(window));
+            Assert.Equal(EndReason.DrawAgreement, game.Result!.Reason);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+        }
+        finally { window.Close(); }
+    });
+
+    private static Task StartBot(MainWindow window) => (Task)typeof(MainWindow)
+        .GetMethod("PlayBotMoveAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null)!;
+
+    private static void FinishBot(Task task)
+    {
+        System.Windows.Threading.DispatcherFrame frame = new();
+        _ = task.ContinueWith(_ => frame.Dispatcher.BeginInvoke(() => frame.Continue = false));
+        System.Windows.Threading.Dispatcher.PushFrame(frame);
+        task.GetAwaiter().GetResult();
+    }
+
     [Fact]
     public void ClaimControlsAppearOnlyForCurrentOrIntendedClaims() => fixture.Run(() =>
     {
@@ -125,8 +225,8 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Call(window, "ImportPgnFromFile", folder.File);
             GameState game = (GameState)Field(window, "gameState");
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal("2. White: Nf3", history.Items[2]);
-            Assert.Equal("5. White: O-O", history.Items[8]);
+            Assert.Equal(new ScoresheetEntry("2", "Nf3", "Nc6"), history.Items[1]);
+            Assert.Equal(new ScoresheetEntry("5", "O-O", "Be7"), history.Items[4]);
             Call(window, "ExportPgnToFile", folder.File);
             Assert.Equal(game.ToFen(), Pgn.Load(folder.File).ToFen());
             SavePreview(window, "CHESS_PGN_SCREENSHOT_PATH");
@@ -293,8 +393,8 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Call(window, "HandleMove", FindMove(game, "c7", "c5"));
 
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal(2, history.Items.Count);
-            Assert.Contains("Black: c5", (string)history.Items[1]);
+            Assert.Single(history.Items.Cast<object>());
+            Assert.Equal(new ScoresheetEntry("1", "e4", "c5"), history.Items[0]);
             Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
         }
         finally { window.Close(); }
@@ -484,7 +584,7 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Assert.Null(Menu(window).Content);
 
             Call(window, "HandleMove", FindMove(game, "g8", "f6"));
-            Assert.StartsWith("42. Black:", (string)((ListBox)window.FindName("HistoryList")).Items[0]);
+            Assert.Equal(new ScoresheetEntry("42", "", "Nf6"), ((ListBox)window.FindName("HistoryList")).Items[0]);
             Assert.True(((Button)window.FindName("ClaimDrawButton")).IsEnabled);
         }
         finally { window.Close(); }
@@ -549,8 +649,10 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
         finally { window.Close(); }
     });
 
-    [Fact]
-    public void BoardAndHistoryFitTheWindow() => fixture.Run(() =>
+    [Theory]
+    [InlineData(1032, 740)]
+    [InlineData(852, 620)]
+    public void BoardAndHistoryFitTheWindow(double width, double height) => fixture.Run(() =>
     {
         MainWindow window = new();
         try
@@ -560,19 +662,19 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Play(game, "g1", "f3"); Play(game, "b8", "c6");
             SetGame(window, game);
             FrameworkElement root = (FrameworkElement)window.Content;
-            root.Measure(new Size(844, 600));
-            root.Arrange(new Rect(0, 0, 844, 600));
+            root.Measure(new Size(width, height));
+            root.Arrange(new Rect(0, 0, width, height));
             root.UpdateLayout();
 
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal(4, history.Items.Count);
-            Assert.True(history.ActualHeight > 200);
+            Assert.Equal(2, history.Items.Count);
+            Assert.True(history.ActualHeight > 60);
             Assert.True(((Grid)window.FindName("BoardGrid")).ActualWidth > 0);
 
             string? screenshotPath = Environment.GetEnvironmentVariable("CHESS_SCREENSHOT_PATH");
             if (screenshotPath != null)
             {
-                RenderTargetBitmap bitmap = new(844, 600, 96, 96, PixelFormats.Pbgra32);
+                RenderTargetBitmap bitmap = new((int)width, (int)height, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(root);
                 PngBitmapEncoder encoder = new();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));

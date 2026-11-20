@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -11,6 +11,8 @@ using System.Windows.Shapes;
 using ChessLogic;
 using Microsoft.Win32;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ChessUI
 {
@@ -26,29 +28,44 @@ namespace ChessUI
 
         private GameState gameState;
         private Position? selectedPosition;
-        public MainWindow()
+        private CancellationTokenSource? botCancellation;
+        private bool windowClosed;
+        private readonly Player? humanPlayer;
+        public MainWindow() : this(null) { }
+
+        public MainWindow(Player? humanPlayer) : this(humanPlayer, null) { }
+
+        public MainWindow(Player? humanPlayer, GameState? initialGame)
         {
+            if (humanPlayer is not (null or Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(humanPlayer));
+            this.humanPlayer = humanPlayer;
             InitializeComponent();
             InitializeBoard();
 
-            gameState = new GameState(Board.Initial(), Player.White);
+            gameState = initialGame ?? new GameState(Board.Initial(), Player.White);
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             UpdateStatus();
+            if (gameState.IsGameOver()) ShowGameOverMenu();
+            Closed += (_, _) => { windowClosed = true; botCancellation?.Cancel(); };
+            Loaded += (_, _) => { sessionStarted = true; UpdateStatus(); };
         }
 
         private void InitializeBoard()
         {
+            BoardArtwork.FillSquares(SquareGrid);
+            BoardArtwork.FillCoordinates(RankLabels, FileLabels, humanPlayer == Player.Black);
             for(int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    Image pieceImage = new Image();
-                    pieceImages[row, col] = pieceImage;
+                    Position square = DisplaySquare(row, col);
+                    Image pieceImage = new Image { Margin = new Thickness(3.2) };
+                    pieceImages[square.Row, square.Column] = pieceImage;
                     PieceGrid.Children.Add(pieceImage);
 
                     Rectangle highlight = new Rectangle();
-                    highlights[row, col] = highlight;
+                    highlights[square.Row, square.Column] = highlight;
                     HighlightGrid.Children.Add(highlight);
                 }
             }
@@ -68,7 +85,7 @@ namespace ChessUI
 
         private void BoardGrid_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (IsMenuOnScreen() || gameState.IsGameOver() || e.ChangedButton != MouseButton.Left)
+            if (!CanHumanAct() || e.ChangedButton != MouseButton.Left)
                 return;
 
 
@@ -92,14 +109,16 @@ namespace ChessUI
             double squareHeight = BoardGrid.ActualHeight / 8;
             int col = (int)(point.X / squareWidth);
             int row = (int)(point.Y / squareHeight);
-            return new Position(row, col);
+            return DisplaySquare(row, col);
         }
 
         private void OnFromPositionSelected(Position pos)
         {
+            if (!CanHumanAct()) return;
             Move[] legalMoves = gameState.LegalMoves(pos).ToArray();
             if (legalMoves.Length > 0)
             {
+                ClearHighlights();
                 selectedPosition = pos;
                 CacheMoves(legalMoves);
                 HighlightMoves();
@@ -127,7 +146,7 @@ namespace ChessUI
         }
         private void HandleMove(Move move)
         {
-            if (gameState.IsGameOver()) return;
+            if (!CanHumanAct()) return;
 
             if (ClaimWithMoveCheckBox.IsChecked == true)
             {
@@ -145,6 +164,8 @@ namespace ChessUI
             }
 
             gameState.ApplyMove(move);
+            botPaused = false;
+            BotStatusText.Visibility = Visibility.Collapsed;
             ClaimHintText.Text = "";
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
@@ -194,9 +215,9 @@ namespace ChessUI
 
         private void ClearHighlights()
         {
-            foreach (Position to in moveCache.Keys)
+            foreach (Rectangle highlight in highlights)
             {
-                highlights[to.Row, to.Column].Fill = Brushes.Transparent;
+                highlight.Fill = Brushes.Transparent;
             }
         }
 
@@ -244,6 +265,8 @@ namespace ChessUI
 
         private void LoadGame(GameState game)
         {
+            botCancellation?.Cancel();
+            botPaused = false;
             selectedPosition = null;
             ClearHighlights();
             moveCache.Clear();
@@ -254,26 +277,27 @@ namespace ChessUI
             ClaimWithMoveCheckBox.IsChecked = false;
             ClaimHintText.Text = "";
             FileStatusText.Visibility = Visibility.Collapsed;
+            BotStatusText.Visibility = Visibility.Collapsed;
             UpdateStatus();
         }
 
         private void SaveGame_Click(object sender, RoutedEventArgs e)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             SaveFileDialog dialog = new() { Filter = "Chess games (*.chess.json)|*.chess.json", DefaultExt = ".chess.json", AddExtension = true };
             if (dialog.ShowDialog(this) == true) SaveGameToFile(dialog.FileName);
         }
 
         private void LoadGame_Click(object sender, RoutedEventArgs e)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             OpenFileDialog dialog = new() { Filter = "Chess games (*.chess.json)|*.chess.json", CheckFileExists = true };
             if (dialog.ShowDialog(this) == true) LoadGameFromFile(dialog.FileName);
         }
 
         private void SaveGameToFile(string path)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             try { GameFiles.Save(path, gameState); SetFileStatus("Game saved."); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
             { SetFileStatus($"Could not save game: {error.Message}"); }
@@ -281,7 +305,7 @@ namespace ChessUI
 
         private void LoadGameFromFile(string path)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             try
             {
                 GameState loaded = GameFiles.Load(path);
@@ -302,21 +326,21 @@ namespace ChessUI
 
         private void ImportPgn_Click(object sender, RoutedEventArgs e)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             OpenFileDialog dialog = new() { Filter = "PGN games (*.pgn)|*.pgn", CheckFileExists = true };
             if (dialog.ShowDialog(this) == true) ImportPgnFromFile(dialog.FileName);
         }
 
         private void ExportPgn_Click(object sender, RoutedEventArgs e)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             SaveFileDialog dialog = new() { Filter = "PGN games (*.pgn)|*.pgn", DefaultExt = ".pgn", AddExtension = true };
             if (dialog.ShowDialog(this) == true) ExportPgnToFile(dialog.FileName);
         }
 
         private void ImportPgnFromFile(string path)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             try
             {
                 GameState loaded = Pgn.Load(path);
@@ -331,7 +355,7 @@ namespace ChessUI
 
         private void ExportPgnToFile(string path)
         {
-            if (!CanNavigateHistory()) return;
+            if (!CanAccessFiles()) return;
             try { Pgn.Save(path, gameState); SetFileStatus("PGN exported (main line)."); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or FormatException)
             { SetFileStatus($"Could not export PGN: {error.Message}"); }
@@ -339,7 +363,7 @@ namespace ChessUI
 
         private void FenPosition_Click(object sender, RoutedEventArgs e)
         {
-            if (MenuContainer.Content is PromotionMenu or FenMenu) return;
+            if (botCancellation != null || MenuContainer.Content is PromotionMenu or FenMenu) return;
             object previousMenu = MenuContainer.Content;
             FenMenu menu = new(gameState.ToFen());
             MenuContainer.Content = menu;
@@ -359,11 +383,22 @@ namespace ChessUI
 
         private void UpdateStatus()
         {
+            MatchTitleText.Text = humanPlayer == null ? "Local two-player" : "You vs Computer";
+            OpponentText.Text = humanPlayer == null ? "Black" : "Computer";
+            HumanText.Text = humanPlayer == null ? "White" : "You";
+            OpponentColourText.Text = (humanPlayer?.Opponent() ?? Player.Black).ToString();
+            HumanColourText.Text = (humanPlayer ?? Player.White).ToString();
             StatusText.Text = gameState.IsGameOver() ? "Game over" :
-                $"{gameState.CurrentPlayer} to move" + (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
-            ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
-            bool claimNow = gameState.CanClaimDraw();
-            bool claimWithMove = !claimNow && gameState.CanClaimDrawWithIntendedMove();
+                $"{gameState.CurrentPlayer} to move" +
+                (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
+            ActionPanel.IsEnabled = CanHumanAct();
+            BotMoveMenuItem.IsEnabled = CanHumanAct();
+            SuggestMoveButton.IsEnabled = CanHumanAct();
+            CancelBotMenuItem.IsEnabled = botCancellation != null;
+            ResumeBotButton.Visibility = IsBotTurn && botPaused && !IsMenuOnScreen() ? Visibility.Visible : Visibility.Collapsed;
+            ResumeBotButton.IsEnabled = botCancellation == null;
+            bool claimNow = !IsBotTurn && gameState.CanClaimDraw();
+            bool claimWithMove = !IsBotTurn && !claimNow && gameState.CanClaimDrawWithIntendedMove();
             ClaimDrawButton.Visibility = claimNow ? Visibility.Visible : Visibility.Collapsed;
             ClaimDrawButton.IsEnabled = claimNow;
             ClaimWithMoveCheckBox.Visibility = claimWithMove ? Visibility.Visible : Visibility.Collapsed;
@@ -377,28 +412,27 @@ namespace ChessUI
             if (gameState.DrawOfferedBy is Player offeredBy)
             {
                 DrawOfferText.Text = $"{offeredBy} offers a draw.\n{offeredBy.Opponent()}: accept or decline.";
+                if (humanPlayer == offeredBy) DrawOfferText.Text = "You offered a draw. Play your move to let the bot respond.";
+                AcceptDrawButton.IsEnabled = DeclineDrawButton.IsEnabled = humanPlayer == null || humanPlayer == offeredBy.Opponent();
             }
-            FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
+            FenPositionButton.IsEnabled = botCancellation == null && MenuContainer.Content is not (PromotionMenu or FenMenu);
             UndoButton.IsEnabled = CanNavigateHistory() && gameState.CanUndo;
             RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
-            SaveGameMenuItem.IsEnabled = CanNavigateHistory();
-            LoadGameMenuItem.IsEnabled = CanNavigateHistory();
-            ImportPgnMenuItem.IsEnabled = CanNavigateHistory();
-            ExportPgnMenuItem.IsEnabled = CanNavigateHistory();
+            SaveGameMenuItem.IsEnabled = CanAccessFiles();
+            LoadGameMenuItem.IsEnabled = CanAccessFiles();
+            ImportPgnMenuItem.IsEnabled = CanAccessFiles();
+            ExportPgnMenuItem.IsEnabled = CanAccessFiles();
             CommandManager.InvalidateRequerySuggested();
 
-            while (HistoryList.Items.Count > gameState.History.Count)
+            HistoryList.Items.Clear();
+            foreach (var turn in gameState.History.GroupBy(move => move.FullMoveNumber))
             {
-                HistoryList.Items.RemoveAt(HistoryList.Items.Count - 1);
-            }
-
-            while (HistoryList.Items.Count < gameState.History.Count)
-            {
-                int index = HistoryList.Items.Count;
-                MoveRecord move = gameState.History[index];
-                HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move.San}");
+                HistoryList.Items.Add(new ScoresheetEntry(turn.Key.ToString(),
+                    turn.FirstOrDefault(move => move.Player == Player.White)?.San ?? "",
+                    turn.FirstOrDefault(move => move.Player == Player.Black)?.San ?? ""));
             }
             if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
+            QueueBotTurn();
         }
 
         private bool CanNavigateHistory()
@@ -406,11 +440,22 @@ namespace ChessUI
             return MenuContainer.Content is null or PauseMenu or GameOverMenu;
         }
 
+        private bool CanAccessFiles() => botCancellation == null && CanNavigateHistory();
+
         private void NavigateHistory(bool redo)
         {
             if (!CanNavigateHistory()) return;
+            if (!(redo ? gameState.CanRedo : gameState.CanUndo)) return;
+            botPaused = true;
+            botCancellation?.Cancel();
             bool changed = redo ? gameState.Redo() : gameState.Undo();
             if (!changed) return;
+            // A bot match takes back or restores a complete human/bot round.
+            while (humanPlayer != null && gameState.CurrentPlayer != humanPlayer && !gameState.IsGameOver() &&
+                (redo ? gameState.CanRedo : gameState.CanUndo))
+            {
+                if (redo) gameState.Redo(); else gameState.Undo();
+            }
 
             MenuContainer.Content = null;
             selectedPosition = null;
@@ -418,6 +463,7 @@ namespace ChessUI
             moveCache.Clear();
             ClaimWithMoveCheckBox.IsChecked = false;
             ClaimHintText.Text = "";
+            BotStatusText.Visibility = Visibility.Collapsed;
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             UpdateStatus();
@@ -453,7 +499,7 @@ namespace ChessUI
 
         private void ClaimDraw_Click(object sender, RoutedEventArgs e)
         {
-            if (IsMenuOnScreen() || !gameState.CanClaimDraw()) return;
+            if (!CanHumanAct() || !gameState.CanClaimDraw()) return;
             gameState.ClaimDraw();
             ClearHighlights();
             selectedPosition = null;
@@ -462,7 +508,7 @@ namespace ChessUI
 
         private void Resign_Click(object sender, RoutedEventArgs e)
         {
-            if (IsMenuOnScreen() || gameState.IsGameOver()) return;
+            if (!CanHumanAct()) return;
             gameState.Resign();
             ClearHighlights();
             selectedPosition = null;
@@ -471,14 +517,14 @@ namespace ChessUI
 
         private void OfferDraw_Click(object sender, RoutedEventArgs e)
         {
-            if (IsMenuOnScreen() || !gameState.CanOfferDraw) return;
+            if (!CanHumanAct() || !gameState.CanOfferDraw) return;
             gameState.OfferDraw();
             UpdateStatus();
         }
 
         private void AcceptDraw_Click(object sender, RoutedEventArgs e)
         {
-            if (IsMenuOnScreen() || gameState.DrawOfferedBy is not Player offeredBy) return;
+            if (!CanHumanAct() || gameState.DrawOfferedBy is not Player offeredBy || humanPlayer == offeredBy) return;
             gameState.AcceptDraw(offeredBy.Opponent());
             selectedPosition = null;
             ClearHighlights();
@@ -487,7 +533,7 @@ namespace ChessUI
 
         private void DeclineDraw_Click(object sender, RoutedEventArgs e)
         {
-            if (IsMenuOnScreen() || gameState.DrawOfferedBy is not Player offeredBy) return;
+            if (!CanHumanAct() || gameState.DrawOfferedBy is not Player offeredBy || humanPlayer == offeredBy) return;
             gameState.DeclineDraw(offeredBy.Opponent());
             UpdateStatus();
         }
@@ -496,6 +542,12 @@ namespace ChessUI
         {
             if (e.Key != Key.Escape) return;
             e.Handled = true;
+            if (botCancellation != null)
+            {
+                botCancellation.Cancel();
+                if (humanPlayer == null || !IsBotTurn) return;
+                botPaused = true;
+            }
 
             if (MenuContainer.Content is FenMenu fenMenu)
             {
@@ -506,6 +558,7 @@ namespace ChessUI
             if (MenuContainer.Content is PauseMenu)
             {
                 MenuContainer.Content = null;
+                botPaused = false;
                 UpdateStatus();
                 return;
             }
@@ -520,6 +573,7 @@ namespace ChessUI
                     if (option == Options.Continue)
                     {
                         MenuContainer.Content = null;
+                        botPaused = false;
                         UpdateStatus();
                     }
                     else if (option == Options.Restart)

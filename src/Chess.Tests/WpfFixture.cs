@@ -5,6 +5,9 @@ using ChessUI;
 
 namespace Chess.Tests;
 
+[CollectionDefinition("WPF")]
+public sealed class WpfCollection : ICollectionFixture<WpfFixture>;
+
 public sealed class WpfFixture : IDisposable
 {
     private readonly Thread thread;

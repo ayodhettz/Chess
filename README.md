@@ -1,10 +1,44 @@
 # Chess
 
-A local two-player chess application for Windows, built with C#, .NET 10 LTS, and WPF.
-The rules live in `ChessLogic`; the desktop interface lives in `ChessUI`.
-Use [FEN positions](docs/fen.md) to import or export a board position.
+A Windows chess application built with C#, .NET 10 LTS, and WPF. Play against a
+custom-built bot or share the board in local two-player mode. The Tournament UI
+uses a charcoal gradient, restrained brass accents, and a traditional move scoresheet.
+
+| Start a game | Play against the bot |
+| --- | --- |
+| ![Choose an opponent and colour](docs/start-game.png) | ![Tournament board and move scoresheet](docs/bot.png) |
 
 The original foundation follows [OttoBotCode's chess tutorial](https://www.youtube.com/@OttoBotCode).
+
+## Playing
+
+Choose **Computer** or **Local two-player** on the start screen. In a computer game,
+choose White or Black and select **Take White & play** or **Take Black & play**.
+The board faces your side, and the bot moves automatically on its turns.
+
+- Click a piece, then a highlighted destination. Promotion offers all four choices.
+- **Suggest move** highlights a recommendation without playing it.
+- **Escape** pauses or continues. **Help → Cancel thinking** stops a search;
+  **Resume bot** continues a stopped bot turn.
+- **Undo** / **Ctrl+Z** and **Redo** / **Ctrl+Y** navigate history. Bot games group
+  your move and the reply into a round; local games navigate one action at a time.
+- **Open saved game** resumes a complete save from setup. The File menu also
+  supports saving/loading games and importing/exporting PGN; **Load FEN** opens the position editor.
+
+Saved chess files use the mode and colour selected in the current UI. Choose those
+settings before loading a match. See [gameplay controls](docs/gameplay.md) for draw
+claims, offers, resignation, and history behavior.
+
+## The custom bot
+
+The bot is implemented in this repository, without an external engine or online service.
+It searches legal moves and replies using iterative-deepening negamax and alpha-beta
+pruning, then scores material and piece placement. The current baseline searches up
+to three plies within a 4,000-visit budget, using the last completed iteration.
+It handles promotions, draw claims, and responses to draw offers.
+
+This is a starting engine with no difficulty selector or strength rating; it can miss
+tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 
 ## Build and run
 
@@ -20,12 +54,15 @@ dotnet run --project src/ChessUI/ChessUI.csproj
 Alternatively, open `src/Chess.sln` in a Visual Studio version supporting .NET 10
 with the **.NET desktop development** workload, and select `ChessUI` as the startup project.
 
-Select a piece, then a highlighted destination. Choose a piece when promoting a pawn.
-Press **Escape** to pause, continue, or restart.
+The rules and search live in `src/ChessLogic`; the desktop interface lives in
+`src/ChessUI`. Libre Baskerville and IBM Plex fonts are bundled with their license
+notices, so the interface does not depend on installing those fonts separately.
 
 ## Features
 
 - Board rendering and legal-move highlights
+- [Tournament interface](docs/tournament-design.md), based on the approved Figma C design
+- [Custom chess bot](docs/bot.md): automatic opponent mode, colour selection, and move suggestions
 - Turn tracking and king-safety validation
 - Castling, en passant, and all four promotion choices
 - Checkmate, stalemate, and basic insufficient-material detection
@@ -36,6 +73,16 @@ Press **Escape** to pause, continue, or restart.
 - [Undo and redo](docs/undo-redo.md), including finished games and special moves
 
 See [gameplay controls and validation](docs/gameplay.md) for draw claims, move history, resignation, and tests.
+
+## Tests
+
+```powershell
+dotnet test src/Chess.sln --configuration Release -p:TreatWarningsAsErrors=true
+```
+
+The suite includes 381 tests covering chess rules, tactical bot decisions, complete
+saves and PGN, and WPF interactions such as automatic replies, suggestions, pause,
+undo/redo, setup navigation, bundled fonts, and layout at smaller window sizes.
 
 ## Validation and delivery
 
@@ -61,5 +108,4 @@ The tag workflow builds and validates the application before publishing the ZIP 
 generated release notes. Tags outside `main` are rejected. No signing credentials are configured.
 Use a new version tag for each release.
 
-The `Windows build and tests` check can be selected as a required status check in the
-repository's branch protection settings after its first run.
+The `Windows build and tests` check is required before merging into `main`.

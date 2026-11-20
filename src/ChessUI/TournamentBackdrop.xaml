@@ -1,0 +1,12 @@
+<UserControl x:Class="ChessUI.TournamentBackdrop" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" IsHitTestVisible="False" Focusable="False">
+    <Grid Background="{StaticResource WindowColor}" ClipToBounds="True">
+        <Viewbox Stretch="Fill">
+            <Canvas Width="1200" Height="820">
+                <Rectangle Canvas.Left="650" Canvas.Top="-280" Width="760" Height="760" Stroke="{StaticResource AccentColor}" StrokeThickness="1" Opacity="0.065"/>
+                <Rectangle Canvas.Left="724" Canvas.Top="-206" Width="760" Height="760" Stroke="{StaticResource AccentColor}" StrokeThickness="1" Opacity="0.053"/>
+                <Rectangle Canvas.Left="798" Canvas.Top="-132" Width="760" Height="760" Stroke="{StaticResource AccentColor}" StrokeThickness="1" Opacity="0.041"/>
+            </Canvas>
+        </Viewbox>
+    </Grid>
+</UserControl>

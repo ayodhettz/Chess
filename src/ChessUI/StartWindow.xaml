@@ -1,0 +1,55 @@
+<Window x:Class="ChessUI.StartWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:ChessUI"
+        Title="Chess — New game" Width="1216" Height="859" MinWidth="960" MinHeight="720" FontFamily="{StaticResource BodyFont}" FontSize="14"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource WindowColor}" Icon="/ChessUI;component/Assets/icon.ico">
+    <Grid>
+        <local:TournamentBackdrop/>
+        <Grid Margin="48,32,48,28">
+            <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="57"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="CHESS" FontFamily="{StaticResource HeadingFont}" FontSize="32" Foreground="{StaticResource TextColor}" VerticalAlignment="Center"/>
+                <Button Content="Open game" DockPanel.Dock="Right" Style="{StaticResource LinkButtonStyle}" Click="OpenGame_Click" Margin="24,0,0,0"/>
+                <TextBlock Text="New game" DockPanel.Dock="Right" Foreground="{StaticResource MutedColor}" VerticalAlignment="Center" FontSize="14"/>
+            </DockPanel>
+            <Border Grid.Row="1" Height="1" Background="{StaticResource StrokeColor}" VerticalAlignment="Center"/>
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="300" MaxWidth="356"/><ColumnDefinition Width="106"/><ColumnDefinition Width="1.65*"/></Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="New game" FontFamily="{StaticResource HeadingFont}" FontSize="44" Foreground="{StaticResource TextColor}" Margin="0,0,0,28"/>
+                    <TextBlock Text="Computer or a friend. Your choice." FontSize="16" Foreground="{StaticResource MutedColor}" Margin="0,0,0,44"/>
+                    <TextBlock Text="Opponent" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
+                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,28">
+                        <RadioButton x:Name="BotModeRadio" GroupName="Mode" IsChecked="True" Content="Computer" Style="{StaticResource ChoiceStyle}" Checked="Mode_Changed" Margin="0,0,4,0"/>
+                        <RadioButton x:Name="LocalModeRadio" GroupName="Mode" Content="Local two-player" Style="{StaticResource ChoiceStyle}" Checked="Mode_Changed" Margin="4,0,0,0"/>
+                    </UniformGrid>
+                    <StackPanel x:Name="ColourPanel">
+                        <TextBlock Text="You play" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
+                        <UniformGrid Rows="1" Columns="2" Margin="0,0,0,28">
+                            <RadioButton x:Name="WhiteRadio" GroupName="Colour" IsChecked="True" Content="White · first move" Style="{StaticResource ChoiceStyle}" Checked="Colour_Changed" Margin="0,0,4,0"/>
+                            <RadioButton x:Name="BlackRadio" GroupName="Colour" Content="Black" Style="{StaticResource ChoiceStyle}" Checked="Colour_Changed" Margin="4,0,0,0"/>
+                        </UniformGrid>
+                    </StackPanel>
+                    <Button x:Name="StartGameButton" Content="Take White &amp; play" Style="{StaticResource PrimaryButtonStyle}" Click="StartGame_Click" Height="44"/>
+                    <Button Content="Open saved game" Style="{StaticResource LinkButtonStyle}" Click="OpenGame_Click" Margin="0,22,0,0"/>
+                    <TextBlock x:Name="LoadErrorText" Foreground="{StaticResource AccentColor}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite"/>
+                </StackPanel>
+                <Grid Grid.Column="2" VerticalAlignment="Center">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <TextBlock Text="WHITE TO MOVE" Foreground="{StaticResource MutedColor}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="26,0,0,12"/>
+                    <Viewbox Grid.Row="1" MaxWidth="586" Stretch="Uniform" HorizontalAlignment="Left">
+                        <Grid Width="626" Height="626">
+                            <Grid.RowDefinitions><RowDefinition Height="600"/><RowDefinition Height="26"/></Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="600"/></Grid.ColumnDefinitions>
+                            <UniformGrid x:Name="PreviewRanks" Rows="8" Columns="1"/>
+                            <Grid Grid.Column="1">
+                                <UniformGrid x:Name="PreviewSquares" Rows="8" Columns="8"/>
+                                <UniformGrid x:Name="PreviewPieces" Rows="8" Columns="8" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Grid>
+                            <UniformGrid x:Name="PreviewFiles" Grid.Row="1" Grid.Column="1" Rows="1" Columns="8"/>
+                        </Grid>
+                    </Viewbox>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
