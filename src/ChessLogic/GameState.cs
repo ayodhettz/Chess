@@ -213,18 +213,19 @@ namespace ChessLogic
             return null;
         }
 
-        public void Resign()
+        public void Resign() => Resign(CurrentPlayer);
+
+        public void Resign(Player player)
         {
             EnsureActive();
+            if (player is not (Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(player));
             Snapshot previous = CaptureState();
-            Player opponent = CurrentPlayer.Opponent();
+            Player opponent = player.Opponent();
             bool opponentHasMaterial = Board.PositionsOfPlayer(opponent)
                 .Any(pos => Board.GetPiece(pos).Type != PieceType.King);
-            Result = opponentHasMaterial
-                ? Result.WinByResignation(opponent)
-                : Result.DrawByStalemate(EndReason.Resignation);
+            Result = new Result(opponentHasMaterial ? opponent : Player.None, EndReason.Resignation, player);
             DrawOfferedBy = null;
-            RecordUndo(previous, new GameAction("resign"));
+            RecordUndo(previous, new GameAction("resign", Actor: player == CurrentPlayer ? null : player));
         }
 
         public bool Undo()

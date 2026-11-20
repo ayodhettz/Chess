@@ -16,6 +16,16 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture)
 {
     [Fact]
+    public void ResultMenuNamesTheResigningPlayerWhenItWasNotTheirTurn() => fixture.Run(() =>
+    {
+        GameState game = Fen.Parse(Fen.InitialPosition);
+        game.Resign(Player.Black);
+        GameOverMenu menu = new(game);
+        Assert.Contains("Black", ((TextBlock)menu.FindName("Reason_Text")).Text);
+        Assert.DoesNotContain("White", ((TextBlock)menu.FindName("Reason_Text")).Text);
+    });
+
+    [Fact]
     public void BotPlaysTheOpeningAndRestoresControls() => fixture.Run(() =>
     {
         MainWindow window = new();

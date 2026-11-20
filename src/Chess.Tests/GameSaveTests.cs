@@ -134,6 +134,7 @@ public class GameSaveTests
         Assert.Equal(expected.ToFen(), actual.ToFen());
         Assert.Equal(expected.Result?.Reason, actual.Result?.Reason);
         Assert.Equal(expected.Result?.Winner, actual.Result?.Winner);
+        Assert.Equal(expected.Result?.ResignedBy, actual.Result?.ResignedBy);
         Assert.Equal(expected.CurrentPositionRepetitions, actual.CurrentPositionRepetitions);
         Assert.Equal(expected.CanClaimDraw(), actual.CanClaimDraw());
         Assert.Equal(expected.CanUndo, actual.CanUndo);

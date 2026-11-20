@@ -24,6 +24,8 @@ are not tracked. Use normal game actions and FEN loading for positions that need
 Version 1 files remain supported. Files containing PGN metadata or recorded PGN results use
 version 2; those headers and undoable recorded outcomes survive complete-game saving as well.
 Files with draw-offer actions use version 3, preserving pending offers and responses through undo/redo.
+Files with off-turn resignations use version 4 to preserve the resigning player.
+Versions 1–3 remain supported; ordinary current-side resignations can still use older versions.
 
 The code APIs are `GameSave.Serialize` / `GameSave.Deserialize` for text and `GameFiles.Save` /
 `GameFiles.Load` for files. Loading returns a new `GameState`; it never mutates an existing one.
