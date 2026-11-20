@@ -39,6 +39,10 @@
                 <MenuItem x:Name="ImportPgnMenuItem" Header="_Import PGN…" Click="ImportPgn_Click" Foreground="#101010"/>
                 <MenuItem x:Name="ExportPgnMenuItem" Header="_Export PGN…" Click="ExportPgn_Click" Foreground="#101010"/>
             </MenuItem>
+            <MenuItem Header="_Bot">
+                <MenuItem x:Name="BotMoveMenuItem" Header="Play _bot move" Click="BotMove_Click" Foreground="#101010"/>
+                <MenuItem x:Name="CancelBotMenuItem" Header="_Cancel thinking" Click="CancelBot_Click" Foreground="#101010" IsEnabled="False"/>
+            </MenuItem>
         </Menu>
     <Viewbox Grid.Row="1" Grid.Column="0">
         <Grid x:Name="BoardGrid"
@@ -75,6 +79,8 @@
                 <TextBlock x:Name="StatusText" Style="{StaticResource TextStyle}"
                            FontSize="22" TextWrapping="Wrap"/>
                 <TextBlock x:Name="FileStatusText" TextWrapping="Wrap" Foreground="{StaticResource TextColor}"
+                           Visibility="Collapsed" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
+                <TextBlock x:Name="BotStatusText" TextWrapping="Wrap" Foreground="{StaticResource TextColor}"
                            Visibility="Collapsed" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
                 <TextBlock Text="Move history" Style="{StaticResource TextStyle}"
                            FontSize="16" Margin="0,12,0,0"/>

@@ -11,6 +11,8 @@ using System.Windows.Shapes;
 using ChessLogic;
 using Microsoft.Win32;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ChessUI
 {
@@ -26,6 +28,8 @@ namespace ChessUI
 
         private GameState gameState;
         private Position? selectedPosition;
+        private CancellationTokenSource? botCancellation;
+        private bool windowClosed;
         public MainWindow()
         {
             InitializeComponent();
@@ -35,6 +39,57 @@ namespace ChessUI
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             UpdateStatus();
+            Closed += (_, _) => { windowClosed = true; botCancellation?.Cancel(); };
+        }
+
+        private async void BotMove_Click(object sender, RoutedEventArgs e) => await PlayBotMoveAsync();
+
+        private void CancelBot_Click(object sender, RoutedEventArgs e) => botCancellation?.Cancel();
+
+        private async Task PlayBotMoveAsync()
+        {
+            if (!CanNavigateHistory() || IsMenuOnScreen() || gameState.IsGameOver()) return;
+            GameState original = gameState;
+            using CancellationTokenSource cancellation = new();
+            botCancellation = cancellation;
+            selectedPosition = null;
+            ClearHighlights();
+            moveCache.Clear();
+            BotStatusText.Text = "Bot thinking… (Escape to cancel)";
+            BotStatusText.Visibility = Visibility.Visible;
+            UpdateStatus();
+            try
+            {
+                BotDecision decision = await new ChessBot().ChooseMoveAsync(original, cancellation.Token);
+                if (windowClosed || cancellation.IsCancellationRequested || gameState != original) return;
+                ApplyBotDecision(decision);
+                BotStatusText.Text = $"Bot searched {decision.Nodes:N0} nodes; completed depth {decision.Depth}.";
+            }
+            catch (OperationCanceledException)
+            {
+                if (!windowClosed) BotStatusText.Text = "Bot search cancelled. Position unchanged.";
+            }
+            catch (Exception error)
+            {
+                if (!windowClosed) BotStatusText.Text = $"Bot could not finish: {error.Message}";
+            }
+            finally
+            {
+                botCancellation = null;
+                if (!windowClosed) UpdateStatus();
+            }
+        }
+
+        private void ApplyBotDecision(BotDecision decision)
+        {
+            ClaimWithMoveCheckBox.IsChecked = false;
+            ClaimHintText.Text = "";
+            if (decision.AcceptDraw) gameState.AcceptDraw(gameState.CurrentPlayer);
+            else if (decision.ClaimDraw) gameState.ClaimDraw(decision.Move);
+            else if (decision.Move != null) gameState.ApplyMove(decision.Move);
+            DrawBoard(gameState.Board);
+            SetCursor(gameState.CurrentPlayer);
+            if (gameState.IsGameOver()) ShowGameOverMenu();
         }
 
         private void InitializeBoard()
@@ -68,7 +123,7 @@ namespace ChessUI
 
         private void BoardGrid_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (IsMenuOnScreen() || gameState.IsGameOver() || e.ChangedButton != MouseButton.Left)
+            if (botCancellation != null || IsMenuOnScreen() || gameState.IsGameOver() || e.ChangedButton != MouseButton.Left)
                 return;
 
 
@@ -254,6 +309,7 @@ namespace ChessUI
             ClaimWithMoveCheckBox.IsChecked = false;
             ClaimHintText.Text = "";
             FileStatusText.Visibility = Visibility.Collapsed;
+            BotStatusText.Visibility = Visibility.Collapsed;
             UpdateStatus();
         }
 
@@ -361,7 +417,9 @@ namespace ChessUI
         {
             StatusText.Text = gameState.IsGameOver() ? "Game over" :
                 $"{gameState.CurrentPlayer} to move" + (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
-            ActionPanel.IsEnabled = !IsMenuOnScreen() && !gameState.IsGameOver();
+            ActionPanel.IsEnabled = botCancellation == null && !IsMenuOnScreen() && !gameState.IsGameOver();
+            BotMoveMenuItem.IsEnabled = botCancellation == null && !IsMenuOnScreen() && !gameState.IsGameOver();
+            CancelBotMenuItem.IsEnabled = botCancellation != null;
             bool claimNow = gameState.CanClaimDraw();
             bool claimWithMove = !claimNow && gameState.CanClaimDrawWithIntendedMove();
             ClaimDrawButton.Visibility = claimNow ? Visibility.Visible : Visibility.Collapsed;
@@ -378,7 +436,7 @@ namespace ChessUI
             {
                 DrawOfferText.Text = $"{offeredBy} offers a draw.\n{offeredBy.Opponent()}: accept or decline.";
             }
-            FenPositionButton.IsEnabled = MenuContainer.Content is not (PromotionMenu or FenMenu);
+            FenPositionButton.IsEnabled = botCancellation == null && MenuContainer.Content is not (PromotionMenu or FenMenu);
             UndoButton.IsEnabled = CanNavigateHistory() && gameState.CanUndo;
             RedoButton.IsEnabled = CanNavigateHistory() && gameState.CanRedo;
             SaveGameMenuItem.IsEnabled = CanNavigateHistory();
@@ -403,7 +461,7 @@ namespace ChessUI
 
         private bool CanNavigateHistory()
         {
-            return MenuContainer.Content is null or PauseMenu or GameOverMenu;
+            return botCancellation == null && (MenuContainer.Content is null or PauseMenu or GameOverMenu);
         }
 
         private void NavigateHistory(bool redo)
@@ -496,6 +554,7 @@ namespace ChessUI
         {
             if (e.Key != Key.Escape) return;
             e.Handled = true;
+            if (botCancellation != null) { botCancellation.Cancel(); return; }
 
             if (MenuContainer.Content is FenMenu fenMenu)
             {

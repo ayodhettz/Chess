@@ -15,6 +15,105 @@ namespace Chess.Tests;
 public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
 {
     [Fact]
+    public void BotPlaysTheOpeningAndRestoresControls() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = (GameState)Field(window, "gameState");
+            FinishBot(StartBot(window));
+            Assert.Single(game.History);
+            Assert.Equal(Player.Black, game.CurrentPlayer);
+            Assert.True(((StackPanel)window.FindName("ActionPanel")).IsEnabled);
+            Assert.True(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.Contains("completed depth", ((TextBlock)window.FindName("BotStatusText")).Text);
+            SavePreview(window, "CHESS_BOT_PREVIEW_PATH");
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void ClosingTheWindowCancelsPendingBotResults() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        GameState game = (GameState)Field(window, "gameState");
+        string before = GameSave.Serialize(game);
+        Task task = StartBot(window);
+        window.Close();
+        FinishBot(task);
+        Assert.Equal(before, GameSave.Serialize(game));
+    });
+
+    [Fact]
+    public void BotSearchCanBeCancelledWithoutChangingThePosition() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = (GameState)Field(window, "gameState");
+            string before = GameSave.Serialize(game);
+            Task task = StartBot(window);
+            Assert.False(((StackPanel)window.FindName("ActionPanel")).IsEnabled);
+            Assert.False(((Button)window.FindName("UndoButton")).IsEnabled);
+            Assert.False(((MenuItem)window.FindName("BotMoveMenuItem")).IsEnabled);
+            Escape(window);
+            FinishBot(task);
+            Assert.Equal(before, GameSave.Serialize(game));
+            Assert.True(((MenuItem)window.FindName("BotMoveMenuItem")).IsEnabled);
+            Assert.Contains("cancelled", ((TextBlock)window.FindName("BotStatusText")).Text);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void BotMoveUsesNormalHistoryAndCanBeUndone() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse("7k/5Q2/6K1/8/8/8/8/8 w - - 0 1");
+            SetGame(window, game);
+            ((CheckBox)window.FindName("ClaimWithMoveCheckBox")).IsChecked = true;
+            FinishBot(StartBot(window));
+            Assert.Equal(EndReason.Checkmate, game.Result!.Reason);
+            Assert.Single(game.History);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+            Call(window, "NavigateHistory", false);
+            Assert.False(game.IsGameOver());
+            Assert.Empty(game.History);
+            Assert.True(game.CanRedo);
+        }
+        finally { window.Close(); }
+    });
+
+    [Fact]
+    public void BotAcceptsDrawOffersThroughTheUi() => fixture.Run(() =>
+    {
+        MainWindow window = new();
+        try
+        {
+            GameState game = Fen.Parse("3q3k/8/8/3p4/8/8/8/K2R4 b - - 0 42");
+            game.OfferDraw(); Play(game, "h8", "h7");
+            SetGame(window, game);
+            FinishBot(StartBot(window));
+            Assert.Equal(EndReason.DrawAgreement, game.Result!.Reason);
+            Assert.IsType<GameOverMenu>(Menu(window).Content);
+        }
+        finally { window.Close(); }
+    });
+
+    private static Task StartBot(MainWindow window) => (Task)typeof(MainWindow)
+        .GetMethod("PlayBotMoveAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null)!;
+
+    private static void FinishBot(Task task)
+    {
+        System.Windows.Threading.DispatcherFrame frame = new();
+        _ = task.ContinueWith(_ => frame.Dispatcher.BeginInvoke(() => frame.Continue = false));
+        System.Windows.Threading.Dispatcher.PushFrame(frame);
+        task.GetAwaiter().GetResult();
+    }
+
+    [Fact]
     public void ClaimControlsAppearOnlyForCurrentOrIntendedClaims() => fixture.Run(() =>
     {
         MainWindow window = new();
