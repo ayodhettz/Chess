@@ -1,7 +1,7 @@
 # Chess
 
 A local chess application for Windows, built with C#, .NET 10 LTS, and WPF,
-with two-player controls and a custom bot that can play either side on request.
+with local two-player play and a custom bot opponent.
 The rules live in `ChessLogic`; the desktop interface lives in `ChessUI`.
 Use [FEN positions](docs/fen.md) to import or export a board position.
 
@@ -22,12 +22,13 @@ Alternatively, open `src/Chess.sln` in a Visual Studio version supporting .NET 1
 with the **.NET desktop development** workload, and select `ChessUI` as the startup project.
 
 Select a piece, then a highlighted destination. Choose a piece when promoting a pawn.
-Press **Escape** to pause, continue, or restart.
+Choose your mode and colour on the start screen. The bot replies automatically;
+**Suggest move** recommends a move without playing it. Press **Escape** to pause or continue.
 
 ## Features
 
 - Board rendering and legal-move highlights
-- [Custom chess bot](docs/bot.md): ask it to play either side, with cancellable background search
+- [Custom chess bot](docs/bot.md): automatic opponent mode, colour selection, and move suggestions
 - Turn tracking and king-safety validation
 - Castling, en passant, and all four promotion choices
 - Checkmate, stalemate, and basic insufficient-material detection

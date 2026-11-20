@@ -5,6 +5,9 @@ Saving includes the starting FEN, played actions, game result, repetition state,
 remaining redo branch. A successful load replaces the current game and clears UI selection.
 An invalid file leaves the current game and menu untouched. File operations are unavailable
 during promotion or while the FEN editor is open; pause and result menus support them.
+File operations also wait for active bot/suggestion searches to finish or be cancelled.
+Loading uses the current match mode and human colour; those UI choices are not stored
+in the chess JSON. A loaded bot turn receives an automatic reply.
 
 Files use versioned JSON. The loader validates and replays every action, including undone future
 actions, before replacing the game. Special moves, resignation, and current/intended-move draw

@@ -1,15 +1,31 @@
-# Our first chess bot
+# Play our custom chess bot
 
-![The bot's opening move and search summary](bot.png)
+![Choose your mode and colour](start-game.png)
 
-Use **Bot → Play bot move** to let the bot play the side whose turn it is.
-Play your own move, then use the command again for its reply. It also works on loaded
-FEN positions and saved games. This first version is invoked one turn at a time;
-automatic opponent mode and difficulty selection are future work.
+Choose **Play the bot** on the start screen, select White or Black, and press
+**Start game**. The board faces your side. White moves first: if you choose Black,
+the bot opens automatically. After each of your moves, it searches and replies on
+its own. Human input is restricted to your turn. **Local two-player** keeps both
+sides under human control. **New game** returns to setup and discards the current
+session; save first if you want to keep it. Rematch keeps your mode and colour.
 
-The search runs in the background. **Escape** or **Bot → Cancel thinking** cancels it
-without changing the position. Board actions, file operations, and history navigation
-are disabled while it thinks. Closing the window cancels the search too.
+![Automatic bot play and the match panel](bot.png)
+
+The search runs in the background. **Escape** pauses a bot match and cancels pending
+thinking. Continue resumes play. **Help → Cancel thinking** stops a search without
+opening the pause menu; **Resume bot** continues a stopped bot turn. Undo can cancel
+an in-flight reply. Board actions and file operations are disabled while thinking.
+Closing the window or replacing the position discards pending results.
+
+## Suggestions
+
+![A suggestion highlights a move without playing it](suggestion.png)
+
+**Suggest move**, also available under **Help**, runs the same engine for the current
+human side. It shows SAN notation and highlights the source and destination in gold,
+without playing a move or changing the save/undo timeline. It can recommend a draw
+claim or accepting an offer too. Suggestions work in both modes, on human turns.
+In local mode Escape cancels a suggestion without opening the pause menu.
 
 ## How it chooses a move
 
@@ -36,7 +52,7 @@ It reuses this project's legal-move generation and game rules.
 6. **Deepen gradually.** Search depth one, then two, then three. The default budget
    is 4,000 counted search visits across all iterations. If it runs out, keep the
    last fully completed depth. If even depth one cannot finish, use the first legal
-   move in capture/promotion order. The displayed depth is the depth actually completed.
+   move in capture/promotion order.
 
 For example, taking a pawn initially gains 100 points, but if the opponent can then
 capture our rook, the two-ply search sees the larger loss and can choose another move.
@@ -53,6 +69,16 @@ The selected action is applied through the normal game methods, so SAN history,
 undo/redo, draw handling, complete saves, and PGN work as they do for human actions.
 The bot's search tree is temporary and is not stored in a save file.
 
+In a bot match, Undo normally takes back your move and the reply together. Redo
+restores that round. If history navigation leaves the bot to move, automatic play
+waits for **Resume bot** so you can inspect the position. A fresh human move resumes
+normal replies. Local mode still navigates one action at a time.
+
+Load saves, PGNs, and FEN positions from the game screen. They use the selected mode
+and human colour; a loaded bot turn starts automatically. Complete saves store chess
+actions rather than the UI's mode/colour choice, so choose the desired mode before
+loading a saved match. Offer a draw before your move; the bot responds on its turn.
+
 ## Current limits and next steps
 
 This is a deterministic baseline, not a rated engine. Its score is a rough evaluation,
@@ -61,8 +87,9 @@ cost varies with the position and computer. Cancellation is checked during searc
 
 The shallow horizon can miss tactics just beyond its depth. There is no quiescence
 search, transposition table, advanced king safety, or endgame knowledge yet. Next steps
-are automatic play with a chosen human colour, quiescence search to finish tactical
-exchanges before scoring, and faster search to support deeper difficulty levels.
+are quiescence search to finish tactical exchanges before scoring, and faster search
+to support deeper difficulty levels. The search strength is unchanged by automatic mode.
 
 Tests cover mates for both colours, captures and defended pieces, promotion, draw
-choices, bounded search, cancellation, snapshot isolation, and WPF history integration.
+choices, bounded search, cancellation, snapshot isolation, automatic replies, both
+orientations, start-screen navigation, suggestion isolation, and WPF history integration.
