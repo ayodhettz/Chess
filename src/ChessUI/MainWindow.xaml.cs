@@ -33,42 +33,40 @@ namespace ChessUI
         private readonly Player? humanPlayer;
         public MainWindow() : this(null) { }
 
-        public MainWindow(Player? humanPlayer)
+        public MainWindow(Player? humanPlayer) : this(humanPlayer, null) { }
+
+        public MainWindow(Player? humanPlayer, GameState? initialGame)
         {
             if (humanPlayer is not (null or Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(humanPlayer));
             this.humanPlayer = humanPlayer;
             InitializeComponent();
             InitializeBoard();
 
-            gameState = new GameState(Board.Initial(), Player.White);
+            gameState = initialGame ?? new GameState(Board.Initial(), Player.White);
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             UpdateStatus();
+            if (gameState.IsGameOver()) ShowGameOverMenu();
             Closed += (_, _) => { windowClosed = true; botCancellation?.Cancel(); };
             Loaded += (_, _) => { sessionStarted = true; UpdateStatus(); };
         }
 
         private void InitializeBoard()
         {
+            BoardArtwork.FillSquares(SquareGrid);
+            BoardArtwork.FillCoordinates(RankLabels, FileLabels, humanPlayer == Player.Black);
             for(int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++)
                 {
                     Position square = DisplaySquare(row, col);
-                    Image pieceImage = new Image { Margin = new Thickness(5) };
+                    Image pieceImage = new Image { Margin = new Thickness(3.2) };
                     pieceImages[square.Row, square.Column] = pieceImage;
                     PieceGrid.Children.Add(pieceImage);
 
                     Rectangle highlight = new Rectangle();
                     highlights[square.Row, square.Column] = highlight;
                     HighlightGrid.Children.Add(highlight);
-                    Grid tile = new() { Background = new SolidColorBrush(ColorFromHex((row + col) % 2 == 0 ? "#E5E1D4" : "#729086")) };
-                    if (row == 7) tile.Children.Add(new TextBlock { Text = ((char)('a' + square.Column)).ToString(), FontSize = 11,
-                        HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
-                        Margin = new Thickness(3), Foreground = Brushes.Black });
-                    if (col == 0) tile.Children.Add(new TextBlock { Text = (8 - square.Row).ToString(), FontSize = 11,
-                        Margin = new Thickness(3), Foreground = Brushes.Black });
-                    SquareGrid.Children.Add(tile);
                 }
             }
         }
@@ -385,11 +383,13 @@ namespace ChessUI
 
         private void UpdateStatus()
         {
-            MatchTitleText.Text = humanPlayer == null ? "Local two-player" : "You vs Custom bot";
-            OpponentText.Text = humanPlayer == null ? "BLACK" : $"CUSTOM BOT · {humanPlayer.Value.Opponent().ToString().ToUpperInvariant()}";
-            HumanText.Text = humanPlayer == null ? "WHITE" : $"YOU · {humanPlayer.ToString()!.ToUpperInvariant()}";
+            MatchTitleText.Text = humanPlayer == null ? "Local two-player" : "You vs Computer";
+            OpponentText.Text = humanPlayer == null ? "Black" : "Computer";
+            HumanText.Text = humanPlayer == null ? "White" : "You";
+            OpponentColourText.Text = (humanPlayer?.Opponent() ?? Player.Black).ToString();
+            HumanColourText.Text = (humanPlayer ?? Player.White).ToString();
             StatusText.Text = gameState.IsGameOver() ? "Game over" :
-                (humanPlayer == null ? $"{gameState.CurrentPlayer} to move" : IsBotTurn ? "Bot's turn" : "Your turn") +
+                $"{gameState.CurrentPlayer} to move" +
                 (gameState.Board.IsInCheck(gameState.CurrentPlayer) ? " — check" : "");
             ActionPanel.IsEnabled = CanHumanAct();
             BotMoveMenuItem.IsEnabled = CanHumanAct();
@@ -424,16 +424,12 @@ namespace ChessUI
             ExportPgnMenuItem.IsEnabled = CanAccessFiles();
             CommandManager.InvalidateRequerySuggested();
 
-            while (HistoryList.Items.Count > gameState.History.Count)
+            HistoryList.Items.Clear();
+            foreach (var turn in gameState.History.GroupBy(move => move.FullMoveNumber))
             {
-                HistoryList.Items.RemoveAt(HistoryList.Items.Count - 1);
-            }
-
-            while (HistoryList.Items.Count < gameState.History.Count)
-            {
-                int index = HistoryList.Items.Count;
-                MoveRecord move = gameState.History[index];
-                HistoryList.Items.Add($"{move.FullMoveNumber}. {move.Player}: {move.San}");
+                HistoryList.Items.Add(new ScoresheetEntry(turn.Key.ToString(),
+                    turn.FirstOrDefault(move => move.Player == Player.White)?.San ?? "",
+                    turn.FirstOrDefault(move => move.Player == Player.Black)?.San ?? ""));
             }
             if (HistoryList.Items.Count > 0) HistoryList.ScrollIntoView(HistoryList.Items[^1]);
             QueueBotTurn();

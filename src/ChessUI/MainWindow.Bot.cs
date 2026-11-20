@@ -14,7 +14,6 @@ public partial class MainWindow
     private bool CanHumanAct() => botCancellation == null && !IsMenuOnScreen() && !gameState.IsGameOver() && !IsBotTurn;
     private Position DisplaySquare(int row, int column) => humanPlayer == Player.Black
         ? new Position(7 - row, 7 - column) : new Position(row, column);
-    private static Color ColorFromHex(string value) => (Color)ColorConverter.ConvertFromString(value);
 
     private void QueueBotTurn()
     {
