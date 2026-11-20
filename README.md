@@ -42,7 +42,7 @@ tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 
 ## Build and run
 
-Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows.
+Install [.NET SDK 10.0.404 or a newer .NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows.
 From the repository root:
 
 ```powershell
@@ -57,6 +57,22 @@ with the **.NET desktop development** workload, and select `ChessUI` as the star
 The rules and search live in `src/ChessLogic`; the desktop interface lives in
 `src/ChessUI`. Libre Baskerville and IBM Plex fonts are bundled with their license
 notices, so the interface does not depend on installing those fonts separately.
+
+## Online multiplayer development
+
+The [multiplayer server foundation](docs/multiplayer-server.md) provides private
+rooms and server-validated live moves using the existing C# rules. Its portable
+contracts will be shared by a browser client and the Windows app. Browser play,
+Windows online controls, draw/resignation commands, and public hosting are subsequent
+milestones; this backend PR does not make online play available in the desktop UI.
+
+```powershell
+dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.1:5080
+dotnet test src/Chess.Server.Tests/Chess.Server.Tests.csproj --configuration Release
+```
+
+The server can build and run on Linux without WPF. CI publishes a separate Linux
+server archive alongside the existing Windows validation workflow.
 
 ## Features
 
@@ -80,9 +96,11 @@ See [gameplay controls and validation](docs/gameplay.md) for draw claims, move h
 dotnet test src/Chess.sln --configuration Release -p:TreatWarningsAsErrors=true
 ```
 
-The suite includes 381 tests covering chess rules, tactical bot decisions, complete
+The suite covers chess rules, tactical bot decisions, complete
 saves and PGN, and WPF interactions such as automatic replies, suggestions, pause,
 undo/redo, setup navigation, bundled fonts, and layout at smaller window sizes.
+Server tests additionally exercise actual SignalR clients, seat credentials, room
+isolation, authoritative moves, reconnects, expiry, and request limits.
 
 ## Validation and delivery
 
