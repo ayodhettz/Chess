@@ -6,8 +6,8 @@
              xmlns:local="clr-namespace:ChessUI"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Border Width="275"
-            Height="125"
+    <Border Width="310"
+            Height="150"
             Style="{StaticResource BorderStyle}">
         <Grid>
             <Grid.RowDefinitions>
@@ -21,23 +21,23 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.ColumnSpan="2"
-                       Text="RESTART GAME?"
+                       Text="Game paused"
                        Style="{StaticResource TextStyle}"
                        FontSize="28"/>
 
             <Button Grid.Row="1"
                     Content="CONTINUE"
                     Style="{StaticResource ButtonStyle}"
-                    Width="90"
-                    Height="30"
+                    Width="110"
+                    Height="36"
                     Click="Continue_Click"/>
 
             <Button Grid.Row="1"
                     Grid.Column="1"
                     Content="RESTART"
                     Style="{StaticResource ButtonStyle}"
-                    Width="90"
-                    Height="30" 
+                    Width="110"
+                    Height="36"
                     Click="Restart_Click"/>   
 
 
