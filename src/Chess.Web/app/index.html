@@ -20,8 +20,9 @@
     <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
     <section id="setup" class="setup" aria-labelledby="setup-title">
       <div class="setup-form">
-        <h1 id="setup-title">A game with a friend.</h1>
-        <p class="muted">Create a private room, or join with an invitation.</p>
+        <h1 id="setup-title">Your next game.</h1>
+        <p class="muted">Play our custom computer, or invite a friend.</p>
+        <fieldset><legend>Opponent</legend><div class="choices"><label><input type="radio" name="mode" value="friend" checked><span>Play a friend</span></label><label><input type="radio" name="mode" value="computer"><span>Computer</span></label></div></fieldset>
         <fieldset><legend>You play</legend><div class="choices"><label><input type="radio" name="seat" value="white" checked><span>White · first move</span></label><label><input type="radio" name="seat" value="black"><span>Black</span></label></div></fieldset>
         <button id="create-room" class="primary">Create room</button>
         <div class="join-section"><label for="room-code">Have an invitation?</label><form id="join-form"><input id="room-code" name="room" type="text" maxlength="8" autocomplete="off" spellcheck="false" placeholder="Room code" aria-describedby="code-help" required><button id="join-room" type="submit">Join game</button></form><p id="code-help" class="small muted">Eight characters. No account needed.</p></div>
@@ -39,7 +40,7 @@
       </div>
       <aside class="scoresheet">
         <div><h1 id="turn" tabindex="-1">Waiting for a player</h1><p id="game-status" class="muted" role="status" aria-live="polite"></p></div>
-        <section class="invite" aria-label="Invitation"><div><span class="muted">Room</span> <strong id="room-label"></strong><button id="copy-invite" class="text-button">Copy invitation</button></div><label for="invite-link" class="sr-only">Invitation link</label><input id="invite-link" readonly spellcheck="false" aria-describedby="invite-help"><p id="invite-help" class="small muted">Send this link to your opponent. It does not include your private seat credential.</p></section>
+        <section id="invitation-panel" class="invite" aria-label="Invitation"><div><span class="muted">Room</span> <strong id="room-label"></strong><button id="copy-invite" class="text-button">Copy invitation</button></div><label for="invite-link" class="sr-only">Invitation link</label><input id="invite-link" readonly spellcheck="false" aria-describedby="invite-help"><p id="invite-help" class="small muted">Send this link to your opponent. It does not include your private seat credential.</p></section>
         <div class="moves-header"><h2>Moves</h2><span class="small muted">White / Black</span></div>
         <div id="moves-scroll" class="moves-scroll"><table aria-label="Move history"><thead class="sr-only"><tr><th>Move</th><th>White</th><th>Black</th></tr></thead><tbody id="moves"></tbody></table></div>
         <div class="actions">
