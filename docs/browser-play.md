@@ -56,6 +56,7 @@ Moves pause while the opponent is offline. Existing server limits and expiry app
 npm test --prefix src/Chess.Web
 npx --prefix src/Chess.Web playwright install chromium
 dotnet build src/Chess.Server/Chess.Server.csproj --configuration Release
+dotnet build tools/Chess.Client.Smoke/Chess.Client.Smoke.csproj --configuration Release
 npm run test:e2e --prefix src/Chess.Web
 ```
 

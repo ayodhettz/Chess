@@ -30,6 +30,7 @@
                         </UniformGrid>
                     </StackPanel>
                     <Button x:Name="StartGameButton" Content="Take White &amp; play" Style="{StaticResource PrimaryButtonStyle}" Click="StartGame_Click" Height="44"/>
+                    <Button Content="Play online" Style="{StaticResource ButtonStyle}" Click="Online_Click" Margin="0,12,0,0"/>
                     <Button Content="Open saved game" Style="{StaticResource LinkButtonStyle}" Click="OpenGame_Click" Margin="0,22,0,0"/>
                     <TextBlock x:Name="LoadErrorText" Foreground="{StaticResource AccentColor}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>

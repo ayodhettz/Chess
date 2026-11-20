@@ -40,6 +40,11 @@ public partial class StartWindow : Window
     internal Player? SelectedHumanPlayer => BotModeRadio.IsChecked == true
         ? BlackRadio.IsChecked == true ? Player.Black : Player.White : null;
 
+    private void Online_Click(object sender, RoutedEventArgs e)
+    {
+        OnlineWindow window = new(); Application.Current.MainWindow = window; window.Show(); Close();
+    }
+
     private void StartGame_Click(object sender, RoutedEventArgs e) => OpenMatch(null);
 
     private void OpenMatch(GameState? game)

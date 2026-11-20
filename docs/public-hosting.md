@@ -1,7 +1,7 @@
 # Free public hosting with Render
 
-This deployment is a browser multiplayer preview. Windows online play remains a
-separate milestone. The existing WPF app still supports offline local/bot games.
+This deployment serves browser multiplayer and the [Windows online client](windows-online.md).
+The existing WPF app still supports offline local/bot games.
 
 ## What is included
 
