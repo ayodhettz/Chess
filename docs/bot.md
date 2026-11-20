@@ -2,12 +2,13 @@
 
 ![Choose your mode and colour](start-game.png)
 
-Choose **Play the bot** on the start screen, select White or Black, and press
-**Start game**. The board faces your side. White moves first: if you choose Black,
+Choose **Computer** on the start screen, select White or Black, and press
+**Take White & play** or **Take Black & play**. The board faces your side. White moves first: if you choose Black,
 the bot opens automatically. After each of your moves, it searches and replies on
 its own. Human input is restricted to your turn. **Local two-player** keeps both
 sides under human control. **New game** returns to setup and discards the current
 session; save first if you want to keep it. Rematch keeps your mode and colour.
+**Open saved game** on setup resumes a complete save in the chosen mode.
 
 ![Automatic bot play and the match panel](bot.png)
 

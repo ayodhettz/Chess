@@ -7,7 +7,7 @@ Use **Undo** or **Ctrl+Z** to take back the last action. Use **Redo**, **Ctrl+Y*
 and promotion. A resignation or draw claim is a separate action: undo reopens the same
 position before taking back any earlier move.
 
-In **Play the bot**, the UI groups your move and its reply into a round. Undo during
+In a **Computer** game, the UI groups your move and its reply into a round. Undo during
 thinking cancels the pending reply before taking back your move. Redo restores a round.
 If navigation leaves the bot to move, use **Resume bot** when ready; it will not replace
 your redo branch automatically. The `GameState` API continues to navigate one action.

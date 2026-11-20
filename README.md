@@ -28,6 +28,7 @@ Choose your mode and colour on the start screen. The bot replies automatically;
 ## Features
 
 - Board rendering and legal-move highlights
+- [Tournament interface](docs/tournament-design.md), based on the approved Figma C design
 - [Custom chess bot](docs/bot.md): automatic opponent mode, colour selection, and move suggestions
 - Turn tracking and king-safety validation
 - Castling, en passant, and all four promotion choices

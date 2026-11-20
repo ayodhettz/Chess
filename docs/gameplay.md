@@ -4,7 +4,7 @@
 
 ## Controls
 
-Choose **Play the bot** and a colour, or **Local two-player**, on the start screen.
+Choose **Computer** and a colour, or **Local two-player**, on the start screen.
 Bot mode automatically plays the opposite side and faces the board toward you.
 **Suggest move** recommends a move without applying it. **New game** returns to setup.
 
@@ -12,7 +12,7 @@ Bot mode automatically plays the opposite side and faces the board toward you.
 - Choose a queen, rook, bishop, or knight to complete promotion. Escape cannot cancel that choice.
 - Escape opens or closes the pause menu. A completed game stays on its result menu until rematch, exit, or undo.
 - **Undo** / **Ctrl+Z** takes back one action. **Redo** / **Ctrl+Y** / **Ctrl+Shift+Z** restores it. See [undo and redo](undo-redo.md) for result and history behavior.
-- The side panel shows whose turn it is, check status, and move history in SAN notation.
+- The side panel shows whose turn it is, check status, and a SAN scoresheet with White and Black columns for each full move.
 - **Resign** ends the game for the player whose turn it is. A bare opposing king cannot receive a win, so that case is a draw.
 - **Claim draw** appears when the current position qualifies for threefold repetition or the fifty-move rule.
 - To claim based on an intended move, check **Claim with next move**, then select that move, including a promotion choice if needed. A successful claim ends the game before the move is played. An invalid claim leaves the board unchanged; clear the checkbox to resume normal play.
