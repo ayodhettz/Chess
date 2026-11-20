@@ -25,7 +25,8 @@ The initial position counts as its first occurrence. Captures and pawn moves res
 Threefold repetition and fifty moves per side are claimable draws. Fivefold repetition and seventy-five moves per side end the game automatically; checkmate on the final move takes precedence.
 These distinctions follow [FIDE Laws of Chess, Articles 9.2–9.6](https://handbook.fide.com/chapter/E012023).
 
-Material detection covers king versus king, king and bishop versus king, king and knight versus king, and one bishop per side on the same square colour. General dead-position detection, clocks, and an AI opponent are outside this implementation.
+Material detection covers king versus king, king and bishop versus king, king and knight versus king, and one bishop per side on the same square colour. General dead-position detection and clocks are outside this implementation.
+Use [Bot → Play bot move](bot.md) to ask the custom bot to play the current side; Escape cancels its background search.
 Move history resets on rematch. Use [complete-game saves](saved-games.md) to resume a game, or [PGN exchange](pgn.md) to share its main line.
 
 ## Run the regression suite
