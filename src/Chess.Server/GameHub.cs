@@ -54,6 +54,13 @@ public sealed class GameHub(RoomDirectory rooms) : Hub<IGameClient>
         return update.State;
     }
 
+    public async Task<CommandResult> SubmitCommand(RoomCommand command)
+    {
+        CommandExecution execution = Guard(() => rooms.Submit(Context.ConnectionId, command));
+        if (execution.Update != null) await Publish(execution.Update);
+        return execution.Result;
+    }
+
     private Task Publish(RoomUpdate update) => Clients.Clients(update.Recipients).RoomChanged(update.State);
     private static T Guard<T>(Func<T> action)
     {

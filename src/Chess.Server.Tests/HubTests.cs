@@ -16,6 +16,54 @@ public class HubTests : IClassFixture<WebApplicationFactory<Program>>
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task DrawAgreementAndRetriesAreDeliveredToBothPlayers()
+    {
+        await using Client white = await Connect(); await using Client black = await Connect();
+        SeatTicket host = await white.Invoke<SeatTicket>("CreateRoom", Seat.White);
+        RoomSnapshot state = (await black.Invoke<SeatTicket>("JoinRoom", host.Code)).State;
+        RoomCommand opening = new(Guid.NewGuid(), state.Revision, OnlineAction.Move, new("e2", "e4"));
+        CommandResult first = await white.Invoke<CommandResult>("SubmitCommand", opening);
+        Assert.True((await white.Invoke<CommandResult>("SubmitCommand", opening)).WasDuplicate);
+        state = (await black.Invoke<CommandResult>("SubmitCommand", new RoomCommand(Guid.NewGuid(), first.State.Revision, OnlineAction.Move, new("e7", "e5")))).State;
+        state = (await white.Invoke<CommandResult>("SubmitCommand", new RoomCommand(Guid.NewGuid(), state.Revision, OnlineAction.OfferDraw))).State;
+        Assert.Equal(Seat.White, state.Draw.OfferedBy);
+        RoomCommand accept = new(Guid.NewGuid(), state.Revision, OnlineAction.AcceptDraw);
+        CommandResult ended = await black.Invoke<CommandResult>("SubmitCommand", accept);
+        CommandResult retry = await black.Invoke<CommandResult>("SubmitCommand", accept);
+        Assert.True(retry.WasDuplicate); Assert.Equal(ended.AppliedRevision, retry.AppliedRevision);
+        Assert.Equal(ended.State.Revision, retry.State.Revision);
+        Assert.Equal("DrawAgreement", (await white.Read(ended.State.Revision)).Result!.Reason);
+        Assert.Equal("DrawAgreement", (await black.Read(ended.State.Revision)).Result!.Reason);
+        Assert.Equal(2, retry.State.Moves.Length);
+    }
+
+    [Fact]
+    public async Task IntendedClaimsUseServerHistoryAndDoNotPlayTheClaimedMove()
+    {
+        await using Client white = await Connect(); await using Client black = await Connect();
+        SeatTicket host = await white.Invoke<SeatTicket>("CreateRoom", Seat.White);
+        RoomSnapshot state = (await black.Invoke<SeatTicket>("JoinRoom", host.Code)).State;
+        foreach (var (from, to) in new[] { ("g1", "f3"), ("g8", "f6"), ("f3", "g1"), ("f6", "g8"), ("g1", "f3"), ("g8", "f6"), ("f3", "g1") })
+            state = await (state.Turn == Seat.White ? white : black).Invoke<RoomSnapshot>("SubmitMove", new MoveRequest(state.Revision, new(from, to)));
+        Assert.Contains(new MoveIntent("f6", "g8"), state.Draw.ClaimMoves);
+        CommandResult ended = await black.Invoke<CommandResult>("SubmitCommand", new RoomCommand(Guid.NewGuid(), state.Revision, OnlineAction.ClaimDraw, new("f6", "g8")));
+        Assert.Equal("ThreefoldRepetition", ended.State.Result!.Reason);
+        Assert.Equal(state.Fen, ended.State.Fen); Assert.Equal(7, ended.State.Moves.Length);
+    }
+
+    [Fact]
+    public async Task OffTurnResignationReportsTheAuthenticatedActor()
+    {
+        await using Client white = await Connect(); await using Client black = await Connect();
+        SeatTicket host = await white.Invoke<SeatTicket>("CreateRoom", Seat.White);
+        RoomSnapshot state = (await black.Invoke<SeatTicket>("JoinRoom", host.Code)).State;
+        CommandResult result = await black.Invoke<CommandResult>("SubmitCommand", new RoomCommand(Guid.NewGuid(), state.Revision, OnlineAction.Resign));
+        Assert.Equal(Seat.White, result.State.Result!.Winner);
+        Assert.Equal(Seat.Black, result.State.Result.ResignedBy);
+        Assert.Empty(result.State.Moves);
+    }
+
+    [Fact]
     public async Task TwoClientsReceiveTheSameAuthoritativeMove()
     {
         await using Client white = await Connect(); await using Client black = await Connect();

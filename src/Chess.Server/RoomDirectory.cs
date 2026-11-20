@@ -8,6 +8,7 @@ namespace Chess.Server;
 
 public sealed record RoomUpdate(RoomSnapshot State, string[] Recipients);
 public sealed record RoomLease(SeatTicket Ticket, RoomUpdate Update);
+public sealed record CommandExecution(CommandResult Result, RoomUpdate? Update);
 
 public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> configuredLimits)
 {
@@ -76,30 +77,75 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
 
     public RoomUpdate Move(string connectionId, MoveRequest request)
     {
+        if (request == null || request.Move == null) throw Error("invalid_move", "A move is required.");
+        return Submit(connectionId, new(Guid.NewGuid(), request.ExpectedRevision, OnlineAction.Move, request.Move)).Update!;
+    }
+
+    public CommandExecution Submit(string connectionId, RoomCommand command)
+    {
         lock (gate)
         {
             var (room, seat) = Seated(connectionId);
-            if (request == null || request.Move == null) throw Error("invalid_move", "A move is required.");
-            if (request.ExpectedRevision != room.Revision) throw Error("stale_revision", "Refresh the room before submitting another move.");
-            if (Status(room) is RoomStatus.Finished or RoomStatus.Closed) throw Error("game_finished", "This game has ended.");
-            if (room.White?.ConnectionId == null || room.Black?.ConnectionId == null) throw Error("opponent_unavailable", "Both players must be connected.");
-            if (seat != ToSeat(room.Game.CurrentPlayer)) throw Error("wrong_turn", "It is not your turn.");
-            Position from = Square(request.Move.From), to = Square(request.Move.To);
-            PieceType? promotion = request.Move.Promotion switch
+            if (command == null || command.Id == Guid.Empty) throw Error("invalid_command", "A non-empty command ID is required.");
+            PlayerSeat actor = (seat == Seat.White ? room.White : room.Black)!;
+            // A retry is recognized before checking the now-outdated revision or result.
+            if (actor.Receipts.TryGetValue(command.Id, out Receipt? receipt))
             {
-                null => null, Promotion.Queen => PieceType.Queen, Promotion.Rook => PieceType.Rook,
-                Promotion.Bishop => PieceType.Bishop, Promotion.Knight => PieceType.Knight,
-                _ => throw Error("invalid_move", "The promotion choice is invalid.")
-            };
-            Move? move = room.Game.LegalMoves(from).SingleOrDefault(candidate => candidate.To == to &&
-                (candidate is PawnPromotion pawn ? pawn.newType == promotion : promotion == null));
-            if (move == null) throw Error("invalid_move", "The move is not legal in this position.");
-            // Execute the server-generated move, never client-supplied behavior.
-            room.Game.ApplyMove(move);
+                if (receipt.Command != command) throw Error("command_conflict", "This command ID was used with different arguments.");
+                return new(new(command.Id, true, receipt.Revision, State(room)), null);
+            }
+            if (command.ExpectedRevision != room.Revision) throw Error("stale_revision", "Refresh the room before submitting another command.");
+            if (Status(room) is RoomStatus.Finished or RoomStatus.Closed) throw Error("game_finished", "This game has ended.");
+            if (Status(room) == RoomStatus.Waiting) throw Error("game_not_started", "Both seats must be occupied.");
+            if (!Enum.IsDefined(command.Action) || command.Move != null && command.Action is not (OnlineAction.Move or OnlineAction.ClaimDraw))
+                throw Error("invalid_command", "The command arguments are invalid.");
+            if ((command.Action is OnlineAction.Move or OnlineAction.OfferDraw) &&
+                (room.White?.ConnectionId == null || room.Black?.ConnectionId == null))
+                throw Error("opponent_unavailable", "Both players must be connected.");
+            if ((command.Action is OnlineAction.Move or OnlineAction.OfferDraw or OnlineAction.ClaimDraw) && seat != ToSeat(room.Game.CurrentPlayer))
+                throw Error("wrong_turn", "It is not your turn.");
+            Player player = seat == Seat.White ? Player.White : Player.Black;
+            try
+            {
+                switch (command.Action)
+                {
+                    case OnlineAction.Move: room.Game.ApplyMove(Resolve(room.Game, command.Move)); break;
+                    case OnlineAction.OfferDraw: room.Game.OfferDraw(); break;
+                    case OnlineAction.AcceptDraw: room.Game.AcceptDraw(player); break;
+                    case OnlineAction.DeclineDraw: room.Game.DeclineDraw(player); break;
+                    case OnlineAction.ClaimDraw: room.Game.ClaimDraw(command.Move == null ? null : Resolve(room.Game, command.Move)); break;
+                    case OnlineAction.Resign: room.Game.Resign(player); break;
+                }
+            }
+            catch (InvalidOperationException error) { throw Error("invalid_action", error.Message); }
             room.Revision++;
-            if (!room.Game.IsGameOver() && room.Game.History.Count >= limits.MaxPlies) room.ClosedReason = "move_limit";
-            return Update(room);
+            room.Commands++;
+            if (!room.Game.IsGameOver())
+            {
+                if (room.Game.History.Count >= limits.MaxPlies) room.ClosedReason = "move_limit";
+                else if (room.Commands >= limits.MaxCommands) room.ClosedReason = "command_limit";
+            }
+            actor.Receipts.Add(command.Id, new(command, room.Revision));
+            actor.ReceiptOrder.Enqueue(command.Id);
+            if (actor.ReceiptOrder.Count > 128) actor.Receipts.Remove(actor.ReceiptOrder.Dequeue());
+            RoomUpdate update = Update(room);
+            return new(new(command.Id, false, room.Revision, update.State), update);
         }
+    }
+
+    private static Move Resolve(GameState game, MoveIntent? intent)
+    {
+        if (intent == null) throw Error("invalid_move", "A move is required.");
+        Position from = Square(intent.From), to = Square(intent.To);
+        PieceType? promotion = intent.Promotion switch
+        {
+            null => null, Promotion.Queen => PieceType.Queen, Promotion.Rook => PieceType.Rook,
+            Promotion.Bishop => PieceType.Bishop, Promotion.Knight => PieceType.Knight,
+            _ => throw Error("invalid_move", "The promotion choice is invalid.")
+        };
+        return game.LegalMoves(from).SingleOrDefault(candidate => candidate.To == to &&
+            (candidate is PawnPromotion pawn ? pawn.newType == promotion : promotion == null))
+            ?? throw Error("invalid_move", "The move is not legal in this position.");
     }
 
     public RoomUpdate? Disconnect(string connectionId)
@@ -197,14 +243,22 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     {
         GameState game = room.Game;
         RoomStatus status = Status(room);
+        bool active = status == RoomStatus.Active;
+        Move[] legal = active ? game.AllLegalMoves(game.CurrentPlayer).ToArray() : [];
+        bool connected = room.White?.ConnectionId != null && room.Black?.ConnectionId != null;
         return new(OnlineProtocol.Version, room.Code, room.Revision, status,
             room.White?.ConnectionId != null, room.Black?.ConnectionId != null, ToSeat(game.CurrentPlayer), game.ToFen(),
             game.History.Select(move => move.San).ToArray(),
-            status == RoomStatus.Active ? game.AllLegalMoves(game.CurrentPlayer).Select(move => new MoveIntent(Name(move.From), Name(move.To),
-                move is PawnPromotion pawn ? Enum.Parse<Promotion>(pawn.newType.ToString()) : null)).ToArray() : [],
-            game.Result == null ? null : new(game.Result.Winner == Player.None ? null : ToSeat(game.Result.Winner), game.Result.Reason.ToString()),
-            room.ClosedReason, Expiry(room));
+            legal.Select(Intent).ToArray(),
+            game.Result == null ? null : new(game.Result.Winner == Player.None ? null : ToSeat(game.Result.Winner), game.Result.Reason.ToString(),
+                game.Result.ResignedBy is Player resigned ? ToSeat(resigned) : null),
+            room.ClosedReason, Expiry(room), new(game.DrawOfferedBy is Player offer ? ToSeat(offer) : null,
+                active && connected && game.CanOfferDraw, active && game.CanClaimDraw(),
+                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []));
     }
+
+    private static MoveIntent Intent(Move move) => new(Name(move.From), Name(move.To),
+        move is PawnPromotion pawn ? Enum.Parse<Promotion>(pawn.newType.ToString()) : null);
 
     private RoomUpdate Update(Room room) => new(State(room), new[] { room.White?.ConnectionId, room.Black?.ConnectionId }.OfType<string>().ToArray());
     private static byte[] Hash(string? credential)
@@ -228,13 +282,17 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         public PlayerSeat? White { get; set; }
         public PlayerSeat? Black { get; set; }
         public long Revision { get; set; }
+        public int Commands { get; set; }
         public string? ClosedReason { get; set; }
     }
     private sealed class PlayerSeat(byte[] digest)
     {
         public byte[] Digest { get; } = digest;
         public string? ConnectionId { get; set; }
+        public Dictionary<Guid, Receipt> Receipts { get; } = new();
+        public Queue<Guid> ReceiptOrder { get; } = new();
     }
+    private sealed record Receipt(RoomCommand Command, long Revision);
     private sealed class Connection(DateTimeOffset window)
     {
         public Room? Room { get; set; }

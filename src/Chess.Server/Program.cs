@@ -5,7 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddOptions<RoomLimits>().BindConfiguration("Rooms")
     .Validate(limits => limits.MaxRooms is > 0 and <= 10000 && limits.MaxConnections is > 0 and <= 10000 &&
-        limits.MaxPlies is > 0 and <= 512 && limits.Lifetime > TimeSpan.Zero && limits.WaitingLifetime > TimeSpan.Zero &&
+        limits.MaxPlies is > 0 and <= 512 && limits.MaxCommands is > 0 and <= 1024 &&
+        limits.Lifetime > TimeSpan.Zero && limits.WaitingLifetime > TimeSpan.Zero &&
         limits.WaitingLifetime <= limits.Lifetime,
         "Room capacity, game length, and lifetime must be within their supported limits.").ValidateOnStart();
 builder.Services.AddSingleton<RoomDirectory>();
