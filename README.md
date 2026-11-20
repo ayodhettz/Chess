@@ -16,6 +16,9 @@ Choose **Computer** or **Local two-player** on the start screen. In a computer g
 choose White or Black and select **Take White & play** or **Take Black & play**.
 The board faces your side, and the bot moves automatically on its turns.
 
+Choose **Play online** to create or join a private room with a Windows or browser
+opponent. [Windows online controls and recovery](docs/windows-online.md).
+
 - Click a piece, then a highlighted destination. Promotion offers all four choices.
 - **Suggest move** highlights a recommendation without playing it.
 - **Escape** pauses or continues. **Help → Cancel thinking** stops a search;
@@ -73,8 +76,8 @@ dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.
 ```
 
 Open **http://127.0.0.1:5080** locally. The published Linux server archive includes
-all browser assets; players need only a browser. Public hosting and the Windows
-online UI are still future milestones. Localhost links work only on your computer.
+all browser assets; players need only a browser. Windows players can use **Play
+online** to join the same rooms. Localhost links work only on your computer.
 See the [server contract](docs/multiplayer-server.md) and [multiplayer plan](docs/online-multiplayer-plan.md).
 
 CI validates desktop/server tests, browser recovery logic, and real two-browser games.

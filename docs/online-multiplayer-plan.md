@@ -55,7 +55,7 @@ running multiple replicas. SignalR groups alone are not authentication or a game
 
 Plan, server foundation, game actions, and browser play are merged (PRs #14–#17).
 The next hosting PR prepares a free browser-only public preview on Render at the
-owner's request. Windows online integration remains outstanding; the cross-client
+owner's request. Windows online integration is implemented in its follow-up PR; the cross-client
 acceptance checks below gate a full browser/Windows multiplayer release. The public
 preview must be described as browser-only and retain the in-memory room limitation.
 

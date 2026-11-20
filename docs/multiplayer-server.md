@@ -1,8 +1,8 @@
 # Multiplayer server
 
 The server hosts the [browser client](browser-play.md), private rooms, moves,
-draw offers/claims, resignation, and retry receipts. Windows online controls and
-public hosting are later milestones. Offline desktop play remains available.
+draw offers/claims, resignation, and retry receipts. The [Windows online client](windows-online.md)
+uses the same rooms. Offline desktop play remains available.
 
 ## Run locally
 
