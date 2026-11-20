@@ -132,3 +132,8 @@ generated release notes. Tags outside `main` are rejected. No signing credential
 Use a new version tag for each release.
 
 The `Windows build and tests` check is required before merging into `main`.
+
+## Public hosting
+
+A [free Render deployment guide](docs/public-hosting.md) includes the Docker image,
+Blueprint setup, HTTPS-origin configuration, and free-tier room-reset behavior.

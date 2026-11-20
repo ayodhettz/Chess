@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chess-online
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    numInstances: 1
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: Rooms__MaxRooms
+        value: "32"
+      - key: Rooms__MaxConnections
+        value: "128"

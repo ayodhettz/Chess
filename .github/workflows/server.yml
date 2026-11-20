@@ -42,8 +42,30 @@ jobs:
       - name: Install Chromium
         working-directory: src/Chess.Web
         run: npx playwright install --with-deps chromium
-      - name: Test browser multiplayer
+      - name: Build hosting container
+        run: docker build --tag chess-server:ci .
+      - name: Start hosting container
+        run: docker run --detach --rm --name chess-server-ci --publish 5080:8080 chess-server:ci
+      - name: Wait for hosting container
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5080/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs chess-server-ci
+          exit 1
+      - name: Test browser multiplayer against hosting container
+        env:
+          CHESS_BASE_URL: http://127.0.0.1:5080
         run: npm run test:e2e --prefix src/Chess.Web
+      - name: Show hosting container logs
+        if: failure()
+        run: docker logs chess-server-ci
+      - name: Stop hosting container
+        if: always()
+        run: docker stop chess-server-ci
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: failure()
         with:

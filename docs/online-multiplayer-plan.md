@@ -51,6 +51,14 @@ running multiple replicas. SignalR groups alone are not authentication or a game
    packaging, and repeatable deployment. Select a hosting provider and spending limit
    before creating paid resources. Configure deployment secrets through the host/CI.
 
+### Current delivery scope
+
+Plan, server foundation, game actions, and browser play are merged (PRs #14–#17).
+The next hosting PR prepares a free browser-only public preview on Render at the
+owner's request. Windows online integration remains outstanding; the cross-client
+acceptance checks below gate a full browser/Windows multiplayer release. The public
+preview must be described as browser-only and retain the in-memory room limitation.
+
 Each implementation PR targets `main`, uses conventional commits, and includes its
 relevant tests and documentation. Do not deploy or advertise a public multiplayer
 release until the cross-client and recovery acceptance checks pass.

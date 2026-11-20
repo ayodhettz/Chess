@@ -17,11 +17,11 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = false;
 }).AddJsonProtocol(options => OnlineProtocol.ConfigureJson(options.PayloadSerializerOptions));
 builder.Services.AddHostedService<RoomCleanup>();
+var browserOrigin = new BrowserOrigin(builder.Configuration);
 var app = builder.Build();
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments(OnlineProtocol.HubPath) && context.Request.Headers.TryGetValue("Origin", out var origin) &&
-        (origin.Count != 1 || !string.Equals(origin[0], $"{context.Request.Scheme}://{context.Request.Host}", StringComparison.OrdinalIgnoreCase)))
+    if (context.Request.Path.StartsWithSegments(OnlineProtocol.HubPath) && !browserOrigin.Allows(context.Request))
     {
         context.Response.StatusCode = StatusCodes.Status403Forbidden;
         return;
