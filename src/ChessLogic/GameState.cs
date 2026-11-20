@@ -61,6 +61,13 @@ namespace ChessLogic
 
         public string ToFen() => Fen.Format(this);
 
+        internal GameState CopyForAnalysis()
+        {
+            GameState copy = new(Board.Copy(), CurrentPlayer, HalfMoveClock, FullMoveNumber);
+            copy.RestoreState(CaptureState());
+            return copy;
+        }
+
         public IEnumerable<Move> LegalMoves(Position pos)
         {
             if (IsGameOver() || pos == null || !Board.IsInside(pos) ||
