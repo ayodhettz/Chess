@@ -141,6 +141,8 @@ export class GameSession {
     } finally { this.busy = false; this.changed(); this.continueResume(); }
   }
 
+  computer(seat) { return this.enter('CreateComputerRoom', seat); }
+
   create(seat) { return this.enter('CreateRoom', seat); }
   join(code) { return this.enter('JoinRoom', normalizeCode(code)); }
 

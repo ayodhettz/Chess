@@ -65,7 +65,7 @@ notices, so the interface does not depend on installing those fonts separately.
 
 ## Online multiplayer development
 
-The [browser client](docs/browser-play.md) now supports private online games with
+The [browser client](docs/browser-play.md) supports the custom computer opponent and private online games with
 invitation links, reconnect/resume, promotions, draw actions, and resignation.
 It uses the same custom C# rules as the desktop app. Run the server, open its URL,
 and share a room invitation with someone who can reach that server.

@@ -62,3 +62,22 @@ npm run test:e2e --prefix src/Chess.Web
 
 Playwright starts a local server and tests independent player contexts. CI also
 publishes the Linux server including all local scripts, pieces, fonts, and licenses.
+
+## Computer games in the browser
+
+Choose **Computer**, select White or Black, and choose **Play computer**. The same
+custom `ChessLogic.ChessBot` used by the Windows app replies automatically. The board
+shows when the computer is thinking, and there is no invitation for a computer game.
+Reload restores the human seat and the complete server-owned game. Resignation and
+draw claims work as usual. Draw offers are considered when the computer takes its
+next turn; it accepts or continues using its evaluation.
+
+Searches use the existing depth-three, 4,000-node budget. A single background worker
+runs them sequentially, outside the room lock, so other rooms can still process moves.
+A revision check drops a result after disconnect, resignation, or another state change.
+Computer games pause when the human disconnects and resume when that seat returns.
+The bot is not an external engine or a browser-side replacement for the C# rules.
+
+Computer games need the server to remain online. The current public setup therefore
+still requires the hosting PC and Cloudflare tunnel to be running. Saved-game import,
+PGN/FEN editing, local undo, and suggestion tools remain desktop features for now.

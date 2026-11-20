@@ -31,6 +31,13 @@ public sealed class GameHub(RoomDirectory rooms) : Hub<IGameClient>
         return lease.Ticket;
     }
 
+    public async Task<SeatTicket> CreateComputerRoom(Seat humanSeat)
+    {
+        RoomLease lease = Guard(() => rooms.Create(Context.ConnectionId, humanSeat, computer: true));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
     public async Task<SeatTicket> JoinRoom(string code)
     {
         RoomLease lease = Guard(() => rooms.Join(Context.ConnectionId, code));

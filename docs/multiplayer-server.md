@@ -106,3 +106,11 @@ Windows CI continues to build/test the complete solution and publish the desktop
 An independent Linux workflow tests the server without WPF and publishes
 `Chess-server-linux-x64.tar.gz`. Extract that archive and run `./Chess.Server --urls
 http://127.0.0.1:5080` on a compatible Linux host for local validation.
+
+### Computer rooms
+
+`CreateComputerRoom(humanSeat)` returns a normal private human seat ticket with the
+opposite seat reserved for the custom engine. `RoomSnapshot.computerSeat` is an
+optional additive field in protocol 2; existing friend rooms return null. Other
+players cannot join the computer seat or obtain its credential. Computer rooms use
+the same room limits, expiry, command receipts, result rules, and resume mechanism.
