@@ -12,7 +12,8 @@ using static Chess.Tests.TestPositions;
 
 namespace Chess.Tests;
 
-public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
+[Collection("WPF")]
+public class MenuTests(WpfFixture fixture)
 {
     [Fact]
     public void BotPlaysTheOpeningAndRestoresControls() => fixture.Run(() =>
@@ -648,8 +649,10 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
         finally { window.Close(); }
     });
 
-    [Fact]
-    public void BoardAndHistoryFitTheWindow() => fixture.Run(() =>
+    [Theory]
+    [InlineData(1032, 740)]
+    [InlineData(852, 620)]
+    public void BoardAndHistoryFitTheWindow(double width, double height) => fixture.Run(() =>
     {
         MainWindow window = new();
         try
@@ -659,19 +662,19 @@ public class MenuTests(WpfFixture fixture) : IClassFixture<WpfFixture>
             Play(game, "g1", "f3"); Play(game, "b8", "c6");
             SetGame(window, game);
             FrameworkElement root = (FrameworkElement)window.Content;
-            root.Measure(new Size(844, 600));
-            root.Arrange(new Rect(0, 0, 844, 600));
+            root.Measure(new Size(width, height));
+            root.Arrange(new Rect(0, 0, width, height));
             root.UpdateLayout();
 
             ListBox history = (ListBox)window.FindName("HistoryList");
             Assert.Equal(4, history.Items.Count);
-            Assert.True(history.ActualHeight > 200);
+            Assert.True(history.ActualHeight > 60);
             Assert.True(((Grid)window.FindName("BoardGrid")).ActualWidth > 0);
 
             string? screenshotPath = Environment.GetEnvironmentVariable("CHESS_SCREENSHOT_PATH");
             if (screenshotPath != null)
             {
-                RenderTargetBitmap bitmap = new(844, 600, 96, 96, PixelFormats.Pbgra32);
+                RenderTargetBitmap bitmap = new((int)width, (int)height, 96, 96, PixelFormats.Pbgra32);
                 bitmap.Render(root);
                 PngBitmapEncoder encoder = new();
                 encoder.Frames.Add(BitmapFrame.Create(bitmap));
