@@ -61,9 +61,10 @@ notices, so the interface does not depend on installing those fonts separately.
 ## Online multiplayer development
 
 The [multiplayer server foundation](docs/multiplayer-server.md) provides private
-rooms and server-validated live moves using the existing C# rules. Its portable
+rooms, server-validated moves, draw offers/claims, and resignation using the existing
+C# rules. Commands support bounded retry receipts across reconnects. Its portable
 contracts will be shared by a browser client and the Windows app. Browser play,
-Windows online controls, draw/resignation commands, and public hosting are subsequent
+Windows online controls, and public hosting are subsequent
 milestones; this backend PR does not make online play available in the desktop UI.
 
 ```powershell
