@@ -43,9 +43,11 @@ tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 ## Build and run
 
 Install [.NET SDK 10.0.404 or a newer .NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows.
+Install [Node.js 24 LTS](https://nodejs.org/) to build the browser assets used by the server.
 From the repository root:
 
 ```powershell
+npm ci --prefix src/Chess.Web --ignore-scripts
 dotnet restore src/Chess.sln
 dotnet build src/Chess.sln --configuration Release
 dotnet run --project src/ChessUI/ChessUI.csproj
@@ -60,20 +62,22 @@ notices, so the interface does not depend on installing those fonts separately.
 
 ## Online multiplayer development
 
-The [multiplayer server foundation](docs/multiplayer-server.md) provides private
-rooms, server-validated moves, draw offers/claims, and resignation using the existing
-C# rules. Commands support bounded retry receipts across reconnects. Its portable
-contracts will be shared by a browser client and the Windows app. Browser play,
-Windows online controls, and public hosting are subsequent
-milestones; this backend PR does not make online play available in the desktop UI.
+The [browser client](docs/browser-play.md) now supports private online games with
+invitation links, reconnect/resume, promotions, draw actions, and resignation.
+It uses the same custom C# rules as the desktop app. Run the server, open its URL,
+and share a room invitation with someone who can reach that server.
 
 ```powershell
+npm ci --prefix src/Chess.Web --ignore-scripts
 dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.1:5080
-dotnet test src/Chess.Server.Tests/Chess.Server.Tests.csproj --configuration Release
 ```
 
-The server can build and run on Linux without WPF. CI publishes a separate Linux
-server archive alongside the existing Windows validation workflow.
+Open **http://127.0.0.1:5080** locally. The published Linux server archive includes
+all browser assets; players need only a browser. Public hosting and the Windows
+online UI are still future milestones. Localhost links work only on your computer.
+See the [server contract](docs/multiplayer-server.md) and [multiplayer plan](docs/online-multiplayer-plan.md).
+
+CI validates desktop/server tests, browser recovery logic, and real two-browser games.
 
 ## Features
 

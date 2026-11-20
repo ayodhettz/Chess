@@ -416,3 +416,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Generated browser files
+src/Chess.Server/wwwroot/
+src/Chess.Web/test-results/
+src/Chess.Web/playwright-report/
