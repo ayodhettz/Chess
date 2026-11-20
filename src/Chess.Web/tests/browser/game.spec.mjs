@@ -77,3 +77,24 @@ test('browser assets and same-origin security headers are served locally',async(
  }
  expect((await request.get('/')).headers()['cache-control']).toBe('no-store');
 });
+
+test('castling and en passant are rendered from server snapshots',async({browser,baseURL})=>{
+ const first=await pair(browser,baseURL);
+ for(const [page,from,to] of [[first.white,'e2','e4'],[first.black,'e7','e5'],[first.white,'g1','f3'],[first.black,'b8','c6'],[first.white,'f1','c4'],[first.black,'g8','f6'],[first.white,'e1','g1']]) await move(page,from,to);
+ await expect(first.black.locator('[data-square=g1]')).toHaveAttribute('aria-label','g1, white king');
+ await expect(first.black.locator('[data-square=f1]')).toHaveAttribute('aria-label','f1, white rook');
+ await first.a.close();await first.b.close();
+ const second=await pair(browser,baseURL);
+ for(const [page,from,to] of [[second.white,'e2','e4'],[second.black,'a7','a6'],[second.white,'e4','e5'],[second.black,'d7','d5'],[second.white,'e5','d6']]) await move(page,from,to);
+ await expect(second.black.locator('[data-square=d5]')).toHaveAttribute('aria-label','d5, empty');
+ await expect(second.black.locator('[data-square=d6]')).toHaveAttribute('aria-label','d6, white pawn');
+ await second.a.close();await second.b.close();
+});
+test('checkmate reaches both browsers and disables further play',async({browser,baseURL})=>{
+ const {white,black,a,b}=await pair(browser,baseURL);
+ for(const [page,from,to] of [[white,'f2','f3'],[black,'e7','e5'],[white,'g2','g4'],[black,'d8','h4']]) await move(page,from,to);
+ await expect(white.locator('#turn')).toContainText('Black wins · Checkmate');
+ await expect(black.locator('#turn')).toContainText('Black wins · Checkmate');
+ await expect(white.locator('[data-square=e2]')).toHaveAttribute('aria-disabled','true');
+ await a.close();await b.close();
+});
