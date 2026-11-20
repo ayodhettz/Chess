@@ -16,6 +16,58 @@ namespace Chess.Tests;
 [Collection("WPF")]
 public class AutoBotTests(WpfFixture fixture)
 {
+    [Theory]
+    [InlineData("HeadingFont", "Libre Baskerville")]
+    [InlineData("BodyFont", "IBM Plex Sans")]
+    [InlineData("MonoFont", "IBM Plex Mono")]
+    public void BundledDesignFontsResolveWithoutSystemInstallation(string key, string family) => fixture.Run(() =>
+    {
+        FontFamily font = (FontFamily)Application.Current.FindResource(key);
+        Assert.Contains(font.GetTypefaces(), typeface => typeface.TryGetGlyphTypeface(out GlyphTypeface glyph) &&
+            glyph.FamilyNames.Values.Contains(family));
+    });
+
+    [Fact]
+    public void StartScreenLoadsSavedGamesInTheChosenMode() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        GameState saved = Fen.Parse(Fen.InitialPosition);
+        Play(saved, "e2", "e4");
+        GameFiles.Save(folder.File, saved);
+        Window previous = Application.Current.MainWindow;
+        StartWindow start = new();
+        MainWindow? game = null;
+        try
+        {
+            Call(start, "OpenSavedGame", folder.File);
+            game = Assert.IsType<MainWindow>(Application.Current.MainWindow);
+            game.Dispatcher.Invoke(() => { }, DispatcherPriority.Loaded);
+            FinishAutomatic(game);
+            Assert.Equal(Player.White, Game(game).CurrentPlayer);
+            Assert.Equal(2, Game(game).History.Count);
+            Assert.Equal("e4", Game(game).History[0].San);
+        }
+        finally { game?.Close(); start.Close(); Application.Current.MainWindow = previous; }
+    });
+
+    [Fact]
+    public void InvalidStartScreenSavesLeaveSetupAvailable() => fixture.Run(() =>
+    {
+        using TempGameFolder folder = new();
+        File.WriteAllText(folder.File, "invalid save");
+        StartWindow start = new();
+        try
+        {
+            ((RadioButton)start.FindName("BlackRadio")).IsChecked = true;
+            Call(start, "OpenSavedGame", folder.File);
+            Assert.Equal(Player.Black, SelectedSide(start));
+            Assert.Equal("Take Black & play", ((Button)start.FindName("StartGameButton")).Content);
+            Assert.Equal(Visibility.Visible, ((TextBlock)start.FindName("LoadErrorText")).Visibility);
+            Assert.True(((Button)start.FindName("StartGameButton")).IsEnabled);
+        }
+        finally { start.Close(); }
+    });
+
     [Fact]
     public void DenseDrawControlsRemainScrollableAtMinimumSize() => fixture.Run(() =>
     {
@@ -51,7 +103,7 @@ public class AutoBotTests(WpfFixture fixture)
             ((RadioButton)start.FindName("BotModeRadio")).IsChecked = true;
             Assert.Equal(Player.Black, SelectedSide(start));
             ((RadioButton)start.FindName("WhiteRadio")).IsChecked = true;
-            Preview(start, "CHESS_START_PREVIEW_PATH", 920, 620);
+            Preview(start, "CHESS_START_PREVIEW_PATH", 1200, 820);
         }
         finally { start.Close(); }
     });
@@ -104,7 +156,7 @@ public class AutoBotTests(WpfFixture fixture)
             Call(window, "NavigateHistory", true);
             Assert.Equal(after, Game(window).ToFen());
             Assert.Equal(2, Game(window).History.Count);
-            Preview(window, "CHESS_AUTO_PREVIEW_PATH", 1032, 740);
+            Preview(window, "CHESS_AUTO_PREVIEW_PATH", 1200, 820);
         }
         finally { window.Close(); }
     });
@@ -122,7 +174,7 @@ public class AutoBotTests(WpfFixture fixture)
             FinishAutomatic(window);
             Assert.Single(Game(window).History);
             Assert.Equal(Player.Black, Game(window).CurrentPlayer);
-            Preview(window, "CHESS_BLACK_PREVIEW_PATH", 1032, 740);
+            Preview(window, "CHESS_BLACK_PREVIEW_PATH", 1200, 820);
             Call(window, "NavigateHistory", false);
             Assert.Empty(Game(window).History);
             Assert.Equal(Visibility.Visible, ((Button)window.FindName("ResumeBotButton")).Visibility);
@@ -221,7 +273,7 @@ public class AutoBotTests(WpfFixture fixture)
             Assert.StartsWith("Suggestion:", ((TextBlock)window.FindName("BotStatusText")).Text);
             Rectangle[,] highlights = (Rectangle[,])Field(window, "highlights")!;
             Assert.Equal(2, highlights.Cast<Rectangle>().Count(rectangle => rectangle.Fill is SolidColorBrush brush && brush.Color.A > 0));
-            Preview(window, "CHESS_SUGGEST_PREVIEW_PATH", 1032, 740);
+            Preview(window, "CHESS_SUGGEST_PREVIEW_PATH", 1200, 820);
             Call(window, "OnFromPositionSelected", At("e2"));
             Assert.NotNull(Field(window, "selectedPosition"));
         }

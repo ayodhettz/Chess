@@ -225,8 +225,8 @@ public class MenuTests(WpfFixture fixture)
             Call(window, "ImportPgnFromFile", folder.File);
             GameState game = (GameState)Field(window, "gameState");
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal("2. White: Nf3", history.Items[2]);
-            Assert.Equal("5. White: O-O", history.Items[8]);
+            Assert.Equal(new ScoresheetEntry("2", "Nf3", "Nc6"), history.Items[1]);
+            Assert.Equal(new ScoresheetEntry("5", "O-O", "Be7"), history.Items[4]);
             Call(window, "ExportPgnToFile", folder.File);
             Assert.Equal(game.ToFen(), Pgn.Load(folder.File).ToFen());
             SavePreview(window, "CHESS_PGN_SCREENSHOT_PATH");
@@ -393,8 +393,8 @@ public class MenuTests(WpfFixture fixture)
             Call(window, "HandleMove", FindMove(game, "c7", "c5"));
 
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal(2, history.Items.Count);
-            Assert.Contains("Black: c5", (string)history.Items[1]);
+            Assert.Single(history.Items.Cast<object>());
+            Assert.Equal(new ScoresheetEntry("1", "e4", "c5"), history.Items[0]);
             Assert.False(((Button)window.FindName("RedoButton")).IsEnabled);
         }
         finally { window.Close(); }
@@ -584,7 +584,7 @@ public class MenuTests(WpfFixture fixture)
             Assert.Null(Menu(window).Content);
 
             Call(window, "HandleMove", FindMove(game, "g8", "f6"));
-            Assert.StartsWith("42. Black:", (string)((ListBox)window.FindName("HistoryList")).Items[0]);
+            Assert.Equal(new ScoresheetEntry("42", "", "Nf6"), ((ListBox)window.FindName("HistoryList")).Items[0]);
             Assert.True(((Button)window.FindName("ClaimDrawButton")).IsEnabled);
         }
         finally { window.Close(); }
@@ -667,7 +667,7 @@ public class MenuTests(WpfFixture fixture)
             root.UpdateLayout();
 
             ListBox history = (ListBox)window.FindName("HistoryList");
-            Assert.Equal(4, history.Items.Count);
+            Assert.Equal(2, history.Items.Count);
             Assert.True(history.ActualHeight > 60);
             Assert.True(((Grid)window.FindName("BoardGrid")).ActualWidth > 0);
 
