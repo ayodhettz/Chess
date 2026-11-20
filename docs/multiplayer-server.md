@@ -1,8 +1,8 @@
 # Multiplayer server
 
-This is backend infrastructure for private browser/Windows rooms, including moves,
-draw offers/claims, resignation, and retry receipts. Browser play, Windows online UI,
-and public hosting are subsequent milestones. Existing offline play remains available.
+The server hosts the [browser client](browser-play.md), private rooms, moves,
+draw offers/claims, resignation, and retry receipts. Windows online controls and
+public hosting are later milestones. Offline desktop play remains available.
 
 ## Run locally
 

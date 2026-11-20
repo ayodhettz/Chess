@@ -28,6 +28,17 @@ app.Use(async (context, next) =>
     }
     await next(context);
 });
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+    context.Response.Headers.XContentTypeOptions = "nosniff";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    if (context.Request.Path == "/" || context.Request.Path == "/index.html")
+        context.Response.Headers.CacheControl = "no-store";
+    await next(context);
+});
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", protocolVersion = OnlineProtocol.Version }));
 app.MapHub<GameHub>(OnlineProtocol.HubPath);
 app.Run();

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Private online chess. Invite a friend and play in your browser.">
+  <title>Chess · Online</title>
+  <link rel="icon" href="/assets/KingW.png">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/vendor/signalr.min.js" defer></script>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main>
+    <header class="topbar">
+      <a class="brand" href="/" id="home">CHESS</a>
+      <span id="match-label" hidden>Online game</span>
+      <nav aria-label="Game navigation"><span id="connection" role="status">Private online chess</span><button id="new-game" class="text-button" hidden>New game</button></nav>
+    </header>
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+    <section id="setup" class="setup" aria-labelledby="setup-title">
+      <div class="setup-form">
+        <h1 id="setup-title">A game with a friend.</h1>
+        <p class="muted">Create a private room, or join with an invitation.</p>
+        <fieldset><legend>You play</legend><div class="choices"><label><input type="radio" name="seat" value="white" checked><span>White · first move</span></label><label><input type="radio" name="seat" value="black"><span>Black</span></label></div></fieldset>
+        <button id="create-room" class="primary">Create room</button>
+        <div class="join-section"><label for="room-code">Have an invitation?</label><form id="join-form"><input id="room-code" name="room" type="text" maxlength="8" autocomplete="off" spellcheck="false" placeholder="Room code" aria-describedby="code-help" required><button id="join-room" type="submit">Join game</button></form><p id="code-help" class="small muted">Eight characters. No account needed.</p></div>
+        <button id="resume-game" class="text-button" hidden>Resume previous game</button>
+        <p class="small muted">Rooms are temporary. Keep this tab to retain your seat; a server restart ends the session.</p>
+      </div>
+      <div class="preview"><p class="eyebrow">WHITE TO MOVE</p><div id="preview-board" class="board preview-board" aria-label="Starting chess position"></div><div class="file-labels" aria-hidden="true"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div></div>
+    </section>
+    <section id="game" class="game" aria-label="Online chess game" hidden>
+      <div class="board-column">
+        <div class="player"><span id="opponent-label">Opponent</span><span id="opponent-side" class="muted"></span></div>
+        <div class="board-wrap"><div id="ranks" class="rank-labels" aria-hidden="true"></div><div id="board" class="board" role="grid" aria-label="Chess board. Use arrow keys to navigate and Enter to select." aria-rowcount="8" aria-colcount="8"></div></div>
+        <div id="files" class="file-labels" aria-hidden="true"></div>
+        <div class="player"><span>You</span><span id="your-side" class="muted"></span></div>
+      </div>
+      <aside class="scoresheet">
+        <div><h1 id="turn" tabindex="-1">Waiting for a player</h1><p id="game-status" class="muted" role="status" aria-live="polite"></p></div>
+        <section class="invite" aria-label="Invitation"><div><span class="muted">Room</span> <strong id="room-label"></strong><button id="copy-invite" class="text-button">Copy invitation</button></div><label for="invite-link" class="sr-only">Invitation link</label><input id="invite-link" readonly spellcheck="false" aria-describedby="invite-help"><p id="invite-help" class="small muted">Send this link to your opponent. It does not include your private seat credential.</p></section>
+        <div class="moves-header"><h2>Moves</h2><span class="small muted">White / Black</span></div>
+        <div id="moves-scroll" class="moves-scroll"><table aria-label="Move history"><thead class="sr-only"><tr><th>Move</th><th>White</th><th>Black</th></tr></thead><tbody id="moves"></tbody></table></div>
+        <div class="actions">
+          <button id="reconnect" class="primary" hidden>Reconnect</button>
+          <button id="retry-command" hidden>Recover pending action</button>
+          <p id="pending-description" class="small muted" hidden>An action may already have reached the server. Recover it before playing again.</p>
+          <div id="draw-response" hidden><p id="draw-message"></p><div class="button-row"><button id="accept-draw">Accept draw</button><button id="decline-draw">Decline</button></div></div>
+          <button id="claim-draw" hidden>Claim draw</button>
+          <label id="claim-intended-label" class="claim-option" hidden><input id="claim-intended" type="checkbox"> Claim with an intended move</label>
+          <div class="button-row quiet"><button id="offer-draw" class="text-button">Offer draw</button><button id="resign" class="text-button">Resign</button></div>
+          <p id="offer-status" class="small muted" hidden></p>
+          <p class="small muted">Moves and results are validated by the server. No local undo in online games.</p>
+        </div>
+      </aside>
+    </section>
+    <dialog id="promotion-dialog" aria-labelledby="promotion-title"><h2 id="promotion-title">Choose a promotion</h2><div id="promotion-options" class="promotion-options"></div><button id="cancel-promotion" class="text-button">Cancel</button></dialog>
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="button-row"><button id="confirm-yes" class="primary">Confirm</button><button id="confirm-no">Cancel</button></div></dialog>
+    <noscript>This chess board needs JavaScript to connect to the game server.</noscript>
+  </main>
+</body>
+</html>
+
