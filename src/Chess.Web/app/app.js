@@ -44,11 +44,12 @@ async function enter(action) {
 }
 function computerSelected() { return document.querySelector('input[name=mode]:checked').value === 'computer'; }
 for (const radio of document.querySelectorAll('input[name=mode]')) radio.onchange = () => {
+  $('difficulty-panel').hidden = !computerSelected();
   $('create-room').textContent = computerSelected() ? 'Play computer' : 'Create room';
 };
 $('create-room').onclick = () => enter(() => {
   const seat = document.querySelector('input[name=seat]:checked').value;
-  return computerSelected() ? session.computer(seat) : session.create(seat);
+  return computerSelected() ? session.computer(seat, document.querySelector('input[name=difficulty]:checked').value) : session.create(seat);
 });
 $('join-form').onsubmit = event => { event.preventDefault(); void enter(() => session.join($('room-code').value)); };
 $('resume-game').onclick = () => run(async () => { await session.resume(); inGame = true; });

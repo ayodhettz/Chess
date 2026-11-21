@@ -140,3 +140,7 @@ The `Windows build and tests` check is required before merging into `main`.
 
 A [free Render deployment guide](docs/public-hosting.md) includes the Docker image,
 Blueprint setup, HTTPS-origin configuration, and free-tier room-reset behavior.
+
+### Computer difficulty
+
+Choose Easy (1 ply / 500 nodes), Medium (3 plies / 4,000 nodes), or Hard (5 plies / 30,000 nodes) before starting a computer game in Windows or the browser. Medium retains the original settings. These are search limits, not Elo ratings; the bot uses the last fully completed depth within its node budget. Suggestions use Medium. The web bot still runs on the chess server.
