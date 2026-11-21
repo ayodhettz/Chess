@@ -144,3 +144,7 @@ Blueprint setup, HTTPS-origin configuration, and free-tier room-reset behavior.
 ### Computer difficulty
 
 Choose Easy (1 ply / 500 nodes), Medium (3 plies / 4,000 nodes), or Hard (5 plies / 30,000 nodes) before starting a computer game in Windows or the browser. Medium retains the original settings. These are search limits, not Elo ratings; the bot uses the last fully completed depth within its node budget. Suggestions use Medium. The web bot still runs on the chess server.
+
+### Find a match
+
+Web and Windows online setup offer **Find a match** as well as private room invitations. Two waiting connections are paired in arrival order with random colours. Search is cancellable; keep the page/window open. Disconnecting removes a waiting entry, and unrenewed entries expire after 30 seconds. If pairing wins a cancellation race, the assigned game opens so its seat is not lost. Matched games use the same private seat credentials, reconnect, draw and resignation rules as private rooms. There are no ratings or skill-based matching; two people must be searching on the same server. The queue and rooms are in memory and disappear on server restart.

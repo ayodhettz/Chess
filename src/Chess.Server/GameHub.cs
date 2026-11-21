@@ -61,6 +61,9 @@ public sealed class GameHub(RoomDirectory rooms) : Hub<IGameClient>
         return lease.Ticket;
     }
 
+    public Task<SeatTicket?> FindMatch() => Task.FromResult(Guard(() => rooms.FindMatch(Context.ConnectionId)));
+    public Task<SeatTicket?> CancelMatch() => Task.FromResult(Guard(() => rooms.CancelMatch(Context.ConnectionId)));
+
     public Task<RoomSnapshot> GetState() => Task.FromResult(Guard(() => rooms.Snapshot(Context.ConnectionId)));
 
     public async Task<RoomSnapshot> SubmitMove(MoveRequest request)
