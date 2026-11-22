@@ -17,7 +17,8 @@ dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.
 Open http://127.0.0.1:5080. Create a room, choose a side, and copy the invitation.
 The second player opens it and chooses **Join game**. For local testing, use two
 separate browser profiles or an incognito window. A localhost invitation cannot
-reach another computer. Public HTTPS hosting is a separate milestone.
+reach another computer. See the [hosting guide](public-hosting.md) for the public
+preview and optional deployment. Hosting files are already on main.
 
 Published server archives include the browser assets and runtime. Players need
 only a browser; they do not install Node, .NET, or the source. Building the server
@@ -62,6 +63,16 @@ npm run test:e2e --prefix src/Chess.Web
 
 Playwright starts a local server and tests independent player contexts. CI also
 publishes the Linux server including all local scripts, pieces, fonts, and licenses.
+
+## Pending additions
+
+Difficulty selection and **Find a match** are implemented in open
+[PR #37](https://github.com/ayodhettz/Chess/pull/37) and
+[PR #38](https://github.com/ayodhettz/Chess/pull/38). They are not yet merged into main
+or confirmed live as of 22 November 2026. Easy uses 1 ply / 500 visits, Medium
+3 / 4,000, and Hard 5 / 30,000; Medium retains the current limits. Search pairs two
+waiting players with random colours, supports cancellation, and keeps private rooms.
+Both people must use the same server. There are no ratings or skill-based matching.
 
 ## Computer games in the browser
 

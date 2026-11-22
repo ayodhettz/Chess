@@ -2,6 +2,10 @@
 
 ![The normal board without claim controls](draw-controls.png)
 
+Screenshots and history/file controls here describe offline Windows play. The same
+chess rules apply online, where actions are server-validated and local undo is
+unavailable. See [browser play](browser-play.md) and [Windows online play](windows-online.md).
+
 ## Claims appear when they are useful
 
 The normal board hides **Claim draw** and **Claim with next move**.
