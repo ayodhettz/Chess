@@ -23,7 +23,7 @@ namespace ChessUI
     {
         public event Action<Options>? OptionSelected;
 
-        public GameOverMenu(GameState gameState, Player? perspective = null)
+        public GameOverMenu(GameState gameState, Player? perspective = null, bool animate = true)
         {
             InitializeComponent();
 
@@ -31,7 +31,7 @@ namespace ChessUI
             bool draw = result.Winner == Player.None;
             bool won = !draw && (perspective == null || result.Winner == perspective);
             Winner_Text.Text = perspective == null || draw ? GetWinnerText(result.Winner) : won ? "You win" : "You lose";
-            Loaded += (_, _) => ResultMotion.Show(ResultPanel, won, draw);
+            Loaded += (_, _) => ResultMotion.Show(ResultPanel, won, draw, animate);
             Reason_Text.Text = GetReasonText(result.Reason, result.ResignedBy ?? gameState.CurrentPlayer);
         }
 

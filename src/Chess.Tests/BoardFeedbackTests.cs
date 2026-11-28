@@ -30,6 +30,15 @@ public class BoardFeedbackTests(WpfFixture fixture)
     });
 
     [Fact]
+    public void RestoredResultDoesNotAnimate() => fixture.Run(() =>
+    {
+        GameState game = Fen.Parse(Fen.InitialPosition); game.Resign(Player.Black);
+        GameOverMenu menu = new(game, Player.White, animate: false);
+        menu.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+        Assert.False(((Border)menu.FindName("ResultPanel")).HasAnimatedProperties);
+    });
+
+    [Fact]
     public void ComputerResultUsesTheHumanPerspectiveAndLocalNamesTheWinner() => fixture.Run(() =>
     {
         GameState game = Fen.Parse(Fen.InitialPosition);

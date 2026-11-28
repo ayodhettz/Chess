@@ -31,6 +31,7 @@ namespace ChessUI
         private Position? selectedPosition;
         private CancellationTokenSource? botCancellation;
         private bool windowClosed;
+        private bool observedPlayablePosition;
         private readonly Player? humanPlayer;
         public MainWindow() : this(null) { }
 
@@ -246,7 +247,8 @@ namespace ChessUI
 
         private void ShowGameOverMenu()
         {
-            GameOverMenu menu = new GameOverMenu(gameState, humanPlayer);
+            GameOverMenu menu = new GameOverMenu(gameState, humanPlayer, observedPlayablePosition);
+            observedPlayablePosition = false;
             MenuContainer.Content = menu;
             UpdateStatus();
 
@@ -389,6 +391,7 @@ namespace ChessUI
 
         private void UpdateStatus()
         {
+            if (!gameState.IsGameOver()) observedPlayablePosition = true;
             Position? checkedKing = gameState.CheckedKingSquare;
             for (int row = 0; row < 8; row++)
                 for (int col = 0; col < 8; col++)
