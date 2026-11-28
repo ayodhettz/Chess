@@ -279,6 +279,7 @@ namespace ChessUI
             ClearHighlights();
             moveCache.Clear();
             HistoryList.Items.Clear();
+            observedPlayablePosition = false;
             gameState = game;
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
