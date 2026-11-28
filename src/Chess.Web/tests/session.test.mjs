@@ -47,3 +47,23 @@ test('unsupported protocol never enables play',async()=>{
 test('malformed pending storage is discarded',()=>{
  assert.equal(setup({ticket,pending:{id:'broken'}}).session.pending,null);
 });
+
+test('difficulty is sent to the server',async()=>{
+ const {session,calls}=setup();await session.computer('black','hard');
+ assert.deepEqual(calls.find(c=>c[0]==='CreateComputerGame'),['CreateComputerGame','black','hard']);
+});
+test('matchmaking stores the assigned seat and refreshes it',async()=>{
+ const {session,calls}=setup();await session.findMatch();
+ assert.equal(session.ready,true);assert.equal(session.searching,false);
+ assert.ok(calls.some(c=>c[0]==='FindMatch'));assert.ok(calls.some(c=>c[0]==='GetState'));
+});
+test('cancel returns a pairing that already won the race',async()=>{
+ const {session,hub}=setup();const invoke=hub.invoke.bind(hub);
+ hub.invoke=async(method,...args)=>{if(method==='FindMatch'){session.cancelSearch();return null;}return invoke(method,...args);};
+ await session.findMatch();assert.equal(session.ready,true);assert.equal(session.ticket.code,ticket.code);
+});
+test('cancelled waiting search leaves no new seat',async()=>{
+ const {session,hub}=setup();
+ hub.invoke=async method=>{if(method==='FindMatch')session.cancelSearch();return null;};
+ await session.findMatch();assert.equal(session.ticket,null);assert.equal(session.ready,false);assert.equal(session.busy,false);
+});

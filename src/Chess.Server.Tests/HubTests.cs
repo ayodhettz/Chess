@@ -16,6 +16,33 @@ public class HubTests : IClassFixture<WebApplicationFactory<Program>>
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task NativeClientsCanFindCancelAndResumeRandomMatches()
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(15));
+        Chess.Client.OnlineSession Session() => new(new Uri("http://localhost"), options =>
+        {
+            options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler();
+        });
+        await using var first = Session(); await using var second = Session();
+        Task search = first.FindMatchAsync();
+        while (!first.Searching) await Task.Delay(10, timeout.Token);
+        first.CancelSearch(); await search.WaitAsync(timeout.Token);
+        Assert.Null(first.Ticket);
+        search = first.FindMatchAsync();
+        while (!first.Searching) await Task.Delay(10, timeout.Token);
+        await second.FindMatchAsync().WaitAsync(timeout.Token);
+        await search.WaitAsync(timeout.Token);
+        Assert.True(first.Ready); Assert.True(second.Ready);
+        Assert.Equal(first.Ticket!.Code, second.Ticket!.Code);
+        Assert.NotEqual(first.Ticket.Seat, second.Ticket.Seat);
+        var white = first.Ticket.Seat == Seat.White ? first : second;
+        await white.SendAsync(OnlineAction.Move, new("e2", "e4"));
+        await second.ResumeAsync();
+        Assert.Contains("e4", second.State!.Moves);
+    }
+
+    [Fact]
     public async Task DrawAgreementAndRetriesAreDeliveredToBothPlayers()
     {
         await using Client white = await Connect(); await using Client black = await Connect();
