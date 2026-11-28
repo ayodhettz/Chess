@@ -141,6 +141,8 @@ test('check survives selection, clears after an escape, and results respect redu
   await black.locator('#resign').click();await black.locator('#confirm-yes').click();
   await expect(white.locator('#result-banner')).toHaveAttribute('data-outcome','win');
   await expect(black.locator('#result-banner')).toHaveAttribute('data-outcome','loss');
+  await expect(white.locator('#game-status')).toContainText('you win');
+  await expect(black.locator('#game-status')).toContainText('you lose');
   expect(await white.locator('#result-banner').evaluate(el=>getComputedStyle(el,'::after').animationName)).toBe('none');
   await black.reload();await expect(black.locator('#result-banner')).toHaveAttribute('data-outcome','loss');
   await expect(black.locator('#result-banner')).not.toHaveClass(/result-arrival/);

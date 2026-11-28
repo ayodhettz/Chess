@@ -191,6 +191,10 @@ public partial class OnlineWindow : Window
         }
         ConnectionStatus.Text = session!.Ready ? state.Status == RoomStatus.Waiting ? "Share your invitation to begin." : !opponentConnected ? "Waiting for your opponent to reconnect." : ownTurn ? "Your move." : "Your opponent's move."
             : session.Busy ? "Connecting…" : "Offline. Reconnect to resume this seat.";
+        if (state.Result != null)
+            ConnectionStatus.Text = state.Result.Winner == null ? "Game over · draw."
+                : state.Result.Winner == ticket.Seat ? "Game over · you win." : "Game over · you lose.";
+        else if (state.Status == RoomStatus.Closed) ConnectionStatus.Text = "Game ended. Start a new game.";
         RoomLabel.Text = $"Room {state.Code}";
         StringBuilder history = new();
         for (int i = 0; i < state.Moves.Length; i += 2) history.AppendLine($"{i / 2 + 1,3}. {state.Moves[i],-12}{(i + 1 < state.Moves.Length ? state.Moves[i + 1] : "")}");

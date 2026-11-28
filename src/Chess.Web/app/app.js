@@ -167,7 +167,7 @@ function render() {
     }
   }
   $('turn').textContent = outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move${state.checkedSquare ? ' — check' : ''}`);
-  $('game-status').textContent = state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.';
+  $('game-status').textContent = state.result ? (state.result.winner == null ? 'Game over · draw.' : state.result.winner === own ? 'Game over · you win.' : 'Game over · you lose.') : state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.';
   $('opponent-label').textContent = state.computerSeat ? 'Computer · custom engine' : `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
   $('match-label').textContent = state.computerSeat ? 'Computer game' : 'Online game';
   $('invitation-panel').hidden = !!state.computerSeat;
