@@ -72,6 +72,7 @@ export class GameSession {
     this.pending = null;
     this.storageAvailable = true;
     this.resumeRequested = false;
+    this.searching = false;
     try {
       const saved = JSON.parse(storage.getItem(SESSION_KEY));
       if (validTicket(saved?.ticket)) { this.ticket = saved.ticket; this.pending = saved.pending && /^[0-9a-f-]{36}$/i.test(saved.pending.id) && Number.isSafeInteger(saved.pending.expectedRevision) && ['move','offerDraw','acceptDraw','declineDraw','claimDraw','resign'].includes(saved.pending.action) ? saved.pending : null; }
@@ -128,7 +129,18 @@ export class GameSession {
       if (this.hub.state !== 'Disconnected') await this.hub.stop();
       this.ticket = null; this.state = null;
       await this.connect();
-      const ticket = await this.hub.invoke(method, ...args);
+      let ticket;
+      if (method === 'FindMatch') {
+        this.searching = true; this.changed();
+        try {
+          while (this.searching && !ticket) {
+            ticket = await this.hub.invoke('FindMatch');
+            if (!ticket) await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          ticket ??= await this.hub.invoke('CancelMatch');
+        } finally { this.searching = false; }
+        if (!ticket) { this.ticket = previous; return; }
+      } else ticket = await this.hub.invoke(method, ...args);
       if (!validTicket(ticket) || ticket.state.protocolVersion !== PROTOCOL_VERSION) throw new Error('Unsupported server response.');
       this.ticket = { code: ticket.code, seat: ticket.seat, credential: ticket.credential };
       this.pending = null; this.persist();
@@ -142,6 +154,9 @@ export class GameSession {
   }
 
   computer(seat, difficulty = 'medium') { return this.enter('CreateComputerGame', seat, difficulty); }
+
+  findMatch() { return this.enter('FindMatch'); }
+  cancelSearch() { this.searching = false; this.changed(); }
 
   create(seat) { return this.enter('CreateRoom', seat); }
   join(code) { return this.enter('JoinRoom', normalizeCode(code)); }

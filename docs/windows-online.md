@@ -39,9 +39,9 @@ in the invitation, clipboard, URL, or diagnostic output.
 Server restarts and room expiry still end sessions. Online games do not expose local
 undo, FEN replacement, file loading, bot hints, or other offline-only game mutation.
 Use **New game** to return to setup. There are no accounts or ratings.
-Random matchmaking is implemented in open [PR #38](https://github.com/ayodhettz/Chess/pull/38),
-not yet on main or confirmed deployed. It adds **Find a match** and **Cancel search**
-to this lobby, assigns colours randomly, and uses the existing seats and recovery rules.
+Choose **Find a match** and **Cancel search** in the lobby to search for a random
+opponent. Colours are assigned randomly; both players must use the same server.
+A paired game uses the existing private seat and recovery rules.
 See the [hosting guide](public-hosting.md) for the public server's PC dependency.
 
 ## Client and checks

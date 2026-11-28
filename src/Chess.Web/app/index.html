@@ -26,6 +26,8 @@
         <fieldset><legend>You play</legend><div class="choices"><label><input type="radio" name="seat" value="white" checked><span>White · first move</span></label><label><input type="radio" name="seat" value="black"><span>Black</span></label></div></fieldset>
         <fieldset id="difficulty-panel" hidden><legend>Difficulty</legend><div class="choices"><label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label><label><input type="radio" name="difficulty" value="medium" checked><span>Medium</span></label><label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label></div></fieldset>
         <button id="create-room" class="primary">Create room</button>
+        <button id="find-match">Find a match</button><button id="cancel-search" hidden>Cancel search</button>
+        <p id="search-status" class="small muted" role="status" hidden>Searching for another player… Colours are assigned randomly. Keep this page open.</p>
         <div class="join-section"><label for="room-code">Have an invitation?</label><form id="join-form"><input id="room-code" name="room" type="text" maxlength="8" autocomplete="off" spellcheck="false" placeholder="Room code" aria-describedby="code-help" required><button id="join-room" type="submit">Join game</button></form><p id="code-help" class="small muted">Eight characters. No account needed.</p></div>
         <button id="resume-game" class="text-button" hidden>Resume previous game</button>
         <p class="small muted">Rooms are temporary. Keep this tab to retain your seat; a server restart ends the session.</p>

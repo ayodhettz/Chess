@@ -87,17 +87,15 @@ Errors are SignalR `HubException` messages prefixed by stable codes: `not_seated
 `capacity`, `rate_limit`, `game_not_started`, `invalid_command`, `invalid_action`, and
 `command_conflict`. Rejected commands leave the chess position unchanged.
 
-## Pending protocol additions
+## Difficulty and matchmaking methods
 
-Open [PR #37](https://github.com/ayodhettz/Chess/pull/37) adds
-`CreateComputerGame(humanSeat, difficulty)` with Easy, Medium, and Hard limits;
-`CreateComputerRoom` remains compatible with existing clients. Open
-[PR #38](https://github.com/ayodhettz/Chess/pull/38) adds `FindMatch()` and
-`CancelMatch()`, returning a private seat ticket when paired and null while waiting
-or after an unmatched cancellation. Clients poll once per second. Pairing that
-wins a cancellation race still returns its seat. Queue leases expire after 30
-seconds without renewal; disconnect removes the entry. Both additions are
-unmerged and not confirmed live; protocol 2 remains with additive methods.
+`CreateComputerGame(humanSeat, difficulty)` selects `easy`, `medium`, or `hard`;
+`CreateComputerRoom` retains the original Medium limits for older clients.
+`FindMatch()` and `CancelMatch()` return a private seat ticket when paired, or null
+while waiting or after an unmatched cancellation. Clients poll once per second.
+Pairing that wins a cancellation race still delivers its seat. Queue leases expire
+after 30 seconds without renewal, and disconnect removes the entry. These additive
+methods retain protocol version 2 and require the matching server deployment.
 
 ## Limits and deployment boundary
 

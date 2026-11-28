@@ -20,6 +20,8 @@
                         <TextBox Background="{StaticResource ButtonColor}" Foreground="{StaticResource TextColor}" BorderBrush="{StaticResource StrokeColor}" CaretBrush="{StaticResource TextColor}" x:Name="RoomInput" Width="235" Padding="10" FontSize="14" Margin="0,0,8,0" AutomationProperties.Name="Room code or invitation link"/>
                         <Button x:Name="JoinRoom" Content="Join game" Click="Join_Click" Style="{StaticResource ButtonStyle}"/>
                     </WrapPanel>
+                    <WrapPanel Margin="0,12,0,0"><Button x:Name="FindMatch" Content="Find a match" Click="FindMatch_Click" Style="{StaticResource ButtonStyle}"/><Button x:Name="CancelSearch" Content="Cancel search" Click="CancelSearch_Click" Style="{StaticResource LinkButtonStyle}" Visibility="Collapsed"/></WrapPanel>
+                    <TextBlock x:Name="SearchStatus" Text="Searching for another player… Colours are assigned randomly. Keep this window open." Visibility="Collapsed" TextWrapping="Wrap" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
                     <TextBlock Text="Paste a room code or a browser invitation link. Keep this window open to retain your seat." Foreground="{StaticResource MutedColor}" TextWrapping="Wrap" Margin="0,12,0,0"/>
                 </StackPanel>
             </StackPanel>

@@ -62,13 +62,10 @@ The public preview uses Vercel and a Cloudflare Tunnel to the owner's PC.
 Render requested card details and is not the current backend. See
 [public hosting](public-hosting.md); no hosting PR remains to be merged.
 
-Difficulty selection and **Find a match** are implemented in open
-[PR #37](https://github.com/ayodhettz/Chess/pull/37) and
-[PR #38](https://github.com/ayodhettz/Chess/pull/38). They are not yet merged into main
-or confirmed live as of 22 November 2026. Easy uses 1 ply / 500 visits, Medium
-3 / 4,000, and Hard 5 / 30,000; Medium retains the current limits. Search pairs two
-waiting players with random colours, supports cancellation, and keeps private rooms.
-Both people must use the same server. There are no ratings or skill-based matching.
+Difficulty selection and cancellable random matchmaking are implemented alongside
+private invitations. Match search pairs two waiting connections with random colours;
+there are no ratings or skill-based matching. New features require deploying the
+matching server and frontend, not merely merging their code.
 
 Accounts, spectators, chat, persistent rooms, and hosting independent of the
 owner's PC remain future work. Rooms and the proposed queue are process-local.
