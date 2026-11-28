@@ -1,9 +1,27 @@
-# Free public hosting with Render
+# Public hosting: current setup and optional Render deployment
 
-This deployment is a browser multiplayer preview. Windows online play remains a
-separate milestone. The existing WPF app still supports offline local/bot games.
+The hosting code is already on `main`; there is no hosting PR to wait for.
+The repository supports a single Docker service for browser games, the custom bot,
+and the [Windows online client](windows-online.md). Offline Windows games do not need a server.
 
-## What is included
+## Current public setup
+
+The public address is https://ayodhettz-chess.vercel.app. Vercel serves the browser
+frontend; game traffic goes through Cloudflare Tunnel to an ASP.NET server on the
+owner's PC. The PC, server, internet connection, and tunnel must remain running for
+online and browser bot games. A Vercel redeploy alone does not update the C# server.
+
+Render was considered as a replacement, but both Blueprint and manual service setup
+requested a payment card on the owner's account. It is not the current backend.
+The guide below remains an optional deployment recipe for an account that can use
+Render Free. A Free plan is not a guarantee of card-free account verification.
+
+The current Vercel deployment configuration lives outside this repository. Temporary
+Quick Tunnel addresses change when a tunnel is replaced; update the frontend's hub
+and health rewrites and redeploy it when that happens. Keep deployment tokens and
+seat credentials out of the repository.
+
+## Render deployment files
 
 `Dockerfile` builds the browser assets with Node 24, publishes the portable .NET 10
 server, and runs only the ASP.NET runtime as a non-root user on port 8080.
@@ -18,9 +36,9 @@ For another host or a custom domain, set `PublicOrigin=https://your-exact-host`.
 The value must be an HTTPS origin, without a path, query, fragment, or credentials.
 It replaces the default origin; use that address for invitations.
 
-## First deployment
+## Optional first Render deployment
 
-After the hosting PR is merged into `main`:
+Deploy from the existing `main` branch if Render is available under your hosting constraints:
 
 1. Sign in at [Render](https://dashboard.render.com/) using GitHub and use a free
    workspace. Choose **New → Web Service**. Blueprint creation may ask for card
@@ -58,7 +76,7 @@ The optional `render.yaml` defines the same settings for accounts using Blueprin
 apply. It does not configure any paid resources, but Render may request a card for
 Blueprint access. No Blueprint is necessary for manual web-service deployment.
 
-## Free-tier behavior
+## Free-tier behavior (Render only)
 
 Render's free service sleeps after 15 idle minutes and may restart during maintenance.
 The first visit after sleep takes time to wake it. All current rooms are in memory:
@@ -96,6 +114,19 @@ valid room disappears after a deploy or sleep, create a new one.
 If a new deploy fails its health check, Render retains the previous healthy deploy.
 Use the service's **Events/Logs** to inspect the failure and **Manual Deploy** to
 redeploy a known good commit. Rolling back code does not recover in-memory games.
+
+## Updating an existing deployment
+
+1. Check Windows and Linux CI for the commit being deployed.
+2. For Render, deploy that commit from the linked branch. For the current PC setup,
+   publish/restart the server separately and rebuild/redeploy the Vercel frontend.
+   New client hub methods require the matching server version.
+3. Check the public `/health`, a browser computer game, a private two-player room,
+   reload recovery, and a Windows-to-browser game. Backend restarts end rooms.
+4. Difficulty levels and random matchmaking are in open PRs
+   [#37](https://github.com/ayodhettz/Chess/pull/37) and
+   [#38](https://github.com/ayodhettz/Chess/pull/38); they are not yet part of main or
+   confirmed deployed. Test them after deploying their merged versions.
 
 ## Provider references
 

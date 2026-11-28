@@ -42,7 +42,15 @@ async function enter(action) {
   if (session.ticket && !await confirmAction('Start another game?', 'Your previous seat stays reserved, but this tab will replace its saved credential after joining the new room.')) return;
   await run(async () => { await action(); inGame = true; render(); });
 }
-$('create-room').onclick = () => enter(() => session.create(document.querySelector('input[name=seat]:checked').value));
+function computerSelected() { return document.querySelector('input[name=mode]:checked').value === 'computer'; }
+for (const radio of document.querySelectorAll('input[name=mode]')) radio.onchange = () => {
+  $('difficulty-panel').hidden = !computerSelected();
+  $('create-room').textContent = computerSelected() ? 'Play computer' : 'Create room';
+};
+$('create-room').onclick = () => enter(() => {
+  const seat = document.querySelector('input[name=seat]:checked').value;
+  return computerSelected() ? session.computer(seat, document.querySelector('input[name=difficulty]:checked').value) : session.create(seat);
+});
 $('join-form').onsubmit = event => { event.preventDefault(); void enter(() => session.join($('room-code').value)); };
 $('resume-game').onclick = () => run(async () => { await session.resume(); inGame = true; });
 $('reconnect').onclick = () => run(() => session.resume());
@@ -141,8 +149,10 @@ function render() {
   const own = session.ticket.seat, other = own === 'white' ? 'black':'white';
   const ownTurn = state.turn === own, live = active();
   $('turn').textContent = outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move`);
-  $('game-status').textContent = state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : 'Your opponent’s move.';
-  $('opponent-label').textContent = `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
+  $('game-status').textContent = state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.';
+  $('opponent-label').textContent = state.computerSeat ? 'Computer · custom engine' : `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
+  $('match-label').textContent = state.computerSeat ? 'Computer game' : 'Online game';
+  $('invitation-panel').hidden = !!state.computerSeat;
   $('opponent-side').textContent = title(other); $('your-side').textContent = title(own);
   $('room-label').textContent = state.code; $('invite-link').value = invitation(location.href,state.code);
   $('reconnect').hidden = session.ready || !!session.pending; $('reconnect').disabled = session.busy;

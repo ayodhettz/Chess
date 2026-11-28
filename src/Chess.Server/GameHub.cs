@@ -31,6 +31,22 @@ public sealed class GameHub(RoomDirectory rooms) : Hub<IGameClient>
         return lease.Ticket;
     }
 
+    public async Task<SeatTicket> CreateComputerRoom(Seat humanSeat)
+    {
+        RoomLease lease = Guard(() => rooms.Create(Context.ConnectionId, humanSeat, computer: true));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
+    public async Task<SeatTicket> CreateComputerGame(Seat humanSeat, string difficulty)
+    {
+        if (!Enum.TryParse<ChessLogic.BotDifficulty>(difficulty, true, out var level) || !Enum.IsDefined(level))
+            throw new HubException("invalid_difficulty: Choose Easy, Medium, or Hard.");
+        RoomLease lease = Guard(() => rooms.Create(Context.ConnectionId, humanSeat, computer: true, difficulty: level));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
     public async Task<SeatTicket> JoinRoom(string code)
     {
         RoomLease lease = Guard(() => rooms.Join(Context.ConnectionId, code));

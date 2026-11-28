@@ -8,6 +8,7 @@ namespace Chess.Server;
 
 public sealed record RoomUpdate(RoomSnapshot State, string[] Recipients);
 public sealed record RoomLease(SeatTicket Ticket, RoomUpdate Update);
+public sealed record ComputerWork(string Code, long Revision, GameState Position, BotDifficulty Difficulty = BotDifficulty.Medium);
 public sealed record CommandExecution(CommandResult Result, RoomUpdate? Update);
 
 public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> configuredLimits)
@@ -27,17 +28,24 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         }
     }
 
-    public RoomLease Create(string connectionId, Seat preferredSeat)
+    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false, BotDifficulty difficulty = BotDifficulty.Medium)
     {
         lock (gate)
         {
+            _ = BotSearchLimits.For(difficulty);
             Connection connection = Unseated(connectionId);
             if (!Enum.IsDefined(preferredSeat)) throw Error("invalid_seat", "Choose White or Black.");
             if (rooms.Count >= limits.MaxRooms) throw Error("capacity", "The server is at room capacity.");
             string code;
             do { code = string.Concat(Enumerable.Range(0, 8).Select(_ => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[RandomNumberGenerator.GetInt32(32)])); }
             while (rooms.ContainsKey(code));
-            Room room = new(code, clock.GetUtcNow());
+            Room room = new(code, clock.GetUtcNow()) { Difficulty = difficulty };
+            if (computer)
+            {
+                room.ComputerSeat = preferredSeat == Seat.White ? Seat.Black : Seat.White;
+                PlayerSeat opponent = new(RandomNumberGenerator.GetBytes(32)) { IsComputer = true };
+                if (room.ComputerSeat == Seat.White) room.White = opponent; else room.Black = opponent;
+            }
             rooms.Add(code, room);
             return Bind(room, preferredSeat, connectionId, connection, resume: false);
         }
@@ -100,7 +108,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
             if (!Enum.IsDefined(command.Action) || command.Move != null && command.Action is not (OnlineAction.Move or OnlineAction.ClaimDraw))
                 throw Error("invalid_command", "The command arguments are invalid.");
             if ((command.Action is OnlineAction.Move or OnlineAction.OfferDraw) &&
-                (room.White?.ConnectionId == null || room.Black?.ConnectionId == null))
+                (!Connected(room.White) || !Connected(room.Black)))
                 throw Error("opponent_unavailable", "Both players must be connected.");
             if ((command.Action is OnlineAction.Move or OnlineAction.OfferDraw or OnlineAction.ClaimDraw) && seat != ToSeat(room.Game.CurrentPlayer))
                 throw Error("wrong_turn", "It is not your turn.");
@@ -130,6 +138,49 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
             if (actor.ReceiptOrder.Count > 128) actor.Receipts.Remove(actor.ReceiptOrder.Dequeue());
             RoomUpdate update = Update(room);
             return new(new(command.Id, false, room.Revision, update.State), update);
+        }
+    }
+
+    private static bool Connected(PlayerSeat? player) => player?.IsComputer == true || player?.ConnectionId != null;
+
+    public ComputerWork[] TakeComputerTurns()
+    {
+        lock (gate)
+        {
+            List<ComputerWork> work = [];
+            foreach (Room room in rooms.Values)
+            {
+                if (room.ComputerBusy || room.ComputerSeat != ToSeat(room.Game.CurrentPlayer) || Expired(room) ||
+                    Status(room) != RoomStatus.Active || !Connected(room.White) || !Connected(room.Black)) continue;
+                room.ComputerBusy = true;
+                work.Add(new(room.Code, room.Revision, room.Game.CopyForAnalysis(), room.Difficulty));
+            }
+            return work.ToArray();
+        }
+    }
+
+    public RoomUpdate? CompleteComputerTurn(ComputerWork work, BotDecision? decision)
+    {
+        lock (gate)
+        {
+            if (!rooms.TryGetValue(work.Code, out Room? room)) return null;
+            room.ComputerBusy = false;
+            // Presence changes, resignation, and expiry invalidate an in-flight search.
+            if (Expired(room) || room.Revision != work.Revision || Status(room) != RoomStatus.Active ||
+                room.ComputerSeat != ToSeat(room.Game.CurrentPlayer)) return null;
+            if (decision == null) room.ClosedReason = "computer_unavailable";
+            else if (decision.AcceptDraw) room.Game.AcceptDraw(room.Game.CurrentPlayer);
+            else if (decision.ClaimDraw) room.Game.ClaimDraw(decision.Move == null ? null : Resolve(room.Game, Intent(decision.Move)));
+            else if (decision.Move != null) room.Game.ApplyMove(Resolve(room.Game, Intent(decision.Move)));
+            else room.ClosedReason = "computer_unavailable";
+            room.Revision++;
+            room.Commands++;
+            if (!room.Game.IsGameOver())
+            {
+                if (room.Game.History.Count >= limits.MaxPlies) room.ClosedReason = "move_limit";
+                else if (room.Commands >= limits.MaxCommands) room.ClosedReason = "command_limit";
+            }
+            return Update(room);
         }
     }
 
@@ -245,16 +296,16 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         RoomStatus status = Status(room);
         bool active = status == RoomStatus.Active;
         Move[] legal = active ? game.AllLegalMoves(game.CurrentPlayer).ToArray() : [];
-        bool connected = room.White?.ConnectionId != null && room.Black?.ConnectionId != null;
+        bool connected = Connected(room.White) && Connected(room.Black);
         return new(OnlineProtocol.Version, room.Code, room.Revision, status,
-            room.White?.ConnectionId != null, room.Black?.ConnectionId != null, ToSeat(game.CurrentPlayer), game.ToFen(),
+            Connected(room.White), Connected(room.Black), ToSeat(game.CurrentPlayer), game.ToFen(),
             game.History.Select(move => move.San).ToArray(),
             legal.Select(Intent).ToArray(),
             game.Result == null ? null : new(game.Result.Winner == Player.None ? null : ToSeat(game.Result.Winner), game.Result.Reason.ToString(),
                 game.Result.ResignedBy is Player resigned ? ToSeat(resigned) : null),
             room.ClosedReason, Expiry(room), new(game.DrawOfferedBy is Player offer ? ToSeat(offer) : null,
                 active && connected && game.CanOfferDraw, active && game.CanClaimDraw(),
-                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []));
+                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []), room.ComputerSeat);
     }
 
     private static MoveIntent Intent(Move move) => new(Name(move.From), Name(move.To),
@@ -284,10 +335,14 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         public long Revision { get; set; }
         public int Commands { get; set; }
         public string? ClosedReason { get; set; }
+        public Seat? ComputerSeat { get; set; }
+        public bool ComputerBusy { get; set; }
+        public BotDifficulty Difficulty { get; init; }
     }
     private sealed class PlayerSeat(byte[] digest)
     {
         public byte[] Digest { get; } = digest;
+        public bool IsComputer { get; init; }
         public string? ConnectionId { get; set; }
         public Dictionary<Guid, Receipt> Receipts { get; } = new();
         public Queue<Guid> ReceiptOrder { get; } = new();

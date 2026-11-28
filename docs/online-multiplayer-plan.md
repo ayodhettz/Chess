@@ -1,6 +1,6 @@
 # Online multiplayer and browser play
 
-## First playable release
+## Original first-playable scope
 
 A Windows player creates a private game and sends an invitation link. Their friend
 opens the link in a browser and plays without downloading the repository or installing
@@ -29,7 +29,7 @@ Use one server instance initially. Its room state is in memory: a process restar
 ends existing sessions. Add persistence and a distributed room coordinator before
 running multiple replicas. SignalR groups alone are not authentication or a game lock.
 
-## Pull request milestones
+## Original pull request milestones
 
 1. **Plan:** architecture, protocol boundaries, delivery sequence, and acceptance criteria.
 2. **Server foundation:** portable contracts, create/join private rooms, opaque seat
@@ -51,17 +51,27 @@ running multiple replicas. SignalR groups alone are not authentication or a game
    packaging, and repeatable deployment. Select a hosting provider and spending limit
    before creating paid resources. Configure deployment secrets through the host/CI.
 
-### Current delivery scope
+### Current delivery status
 
-Plan, server foundation, game actions, and browser play are merged (PRs #14–#17).
-The next hosting PR prepares a free browser-only public preview on Render at the
-owner's request. Windows online integration remains outstanding; the cross-client
-acceptance checks below gate a full browser/Windows multiplayer release. The public
-preview must be described as browser-only and retain the in-memory room limitation.
+Server foundations, game actions, browser play, Docker hosting support, browser
+computer games, and Windows online integration are on main (through PR #29).
+The milestones above record the original sequence rather than pending work.
+CI exercises browser/browser and browser/Windows play and recovery.
 
-Each implementation PR targets `main`, uses conventional commits, and includes its
-relevant tests and documentation. Do not deploy or advertise a public multiplayer
-release until the cross-client and recovery acceptance checks pass.
+The public preview uses Vercel and a Cloudflare Tunnel to the owner's PC.
+Render requested card details and is not the current backend. See
+[public hosting](public-hosting.md); no hosting PR remains to be merged.
+
+Difficulty selection and **Find a match** are implemented in open
+[PR #37](https://github.com/ayodhettz/Chess/pull/37) and
+[PR #38](https://github.com/ayodhettz/Chess/pull/38). They are not yet merged into main
+or confirmed live as of 22 November 2026. Easy uses 1 ply / 500 visits, Medium
+3 / 4,000, and Hard 5 / 30,000; Medium retains the current limits. Search pairs two
+waiting players with random colours, supports cancellation, and keeps private rooms.
+Both people must use the same server. There are no ratings or skill-based matching.
+
+Accounts, spectators, chat, persistent rooms, and hosting independent of the
+owner's PC remain future work. Rooms and the proposed queue are process-local.
 
 ## Protocol and trust
 
@@ -80,13 +90,15 @@ release until the cross-client and recovery acceptance checks pass.
 - Use HTTPS/WSS for hosted play. Bound request sizes, room count, game length, and room
   lifetime. Apply origin checks to WebSockets as well as HTTP endpoints; do not use
   permissive credentialed CORS. Do not log seat credentials or put them in query strings.
-- Suggestion/bot assistance remains an offline feature in this release. Legal validation
+- Move suggestions remain an offline Windows feature. Browser computer games run
+  the custom bot on the server; neither client exposes hints in human online matches. Legal validation
   prevents illegal moves, but does not prevent players from using external assistance.
 
 ## Verification and delivery
 
-Keep Windows build/tests and the desktop ZIP. Add a Linux job that builds, tests,
-and publishes the server independently of WPF. Exercise actual SignalR clients,
+Windows CI builds/tests and publishes the desktop ZIP. A Linux job builds, tests,
+and publishes the server independently of WPF and verifies the hosting container.
+Integration tests exercise actual SignalR clients,
 not just direct hub method calls: room isolation, both seats receiving accepted moves,
 rejected commands leaving state unchanged, promotion, reconnect replacement, and expiry.
 

@@ -9,4 +9,5 @@
     <ProjectReference Include="../Chess.Server/Chess.Server.csproj"/>
     <Using Include="Xunit"/>
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../Chess.Client/Chess.Client.csproj" /></ItemGroup>
 </Project>

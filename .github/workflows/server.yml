@@ -39,6 +39,8 @@ jobs:
         run: dotnet test src/Chess.Server.Tests/Chess.Server.Tests.csproj --configuration Release --no-restore -p:TreatWarningsAsErrors=true --logger trx --results-directory artifacts/server-tests
       - name: Test browser session recovery
         run: npm test --prefix src/Chess.Web
+      - name: Build native connection probe
+        run: dotnet build tools/Chess.Client.Smoke/Chess.Client.Smoke.csproj --configuration Release -p:TreatWarningsAsErrors=true
       - name: Install Chromium
         working-directory: src/Chess.Web
         run: npx playwright install --with-deps chromium

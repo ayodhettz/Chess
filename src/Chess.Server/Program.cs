@@ -17,6 +17,7 @@ builder.Services.AddSignalR(options =>
     options.EnableDetailedErrors = false;
 }).AddJsonProtocol(options => OnlineProtocol.ConfigureJson(options.PayloadSerializerOptions));
 builder.Services.AddHostedService<RoomCleanup>();
+builder.Services.AddHostedService<ComputerPlayer>();
 var browserOrigin = new BrowserOrigin(builder.Configuration);
 var app = builder.Build();
 app.Use(async (context, next) =>
