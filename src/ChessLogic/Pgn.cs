@@ -26,13 +26,15 @@ namespace ChessLogic
             if (tags.TryGetValue("Result", out string? declared) && !Markers.Contains(declared))
                 throw new FormatException("The Result tag is not a valid game result.");
             if (tags.TryGetValue("Variant", out string? variant) &&
-                !new[] { "Standard", "Chess", "From Position" }.Contains(variant, StringComparer.OrdinalIgnoreCase))
-                throw new FormatException("Only standard chess PGN is supported.");
+                !new[] { "Standard", "Chess", "From Position", "Crazyhouse" }.Contains(variant, StringComparer.OrdinalIgnoreCase))
+                throw new FormatException("Only standard chess and Crazyhouse PGN are supported.");
             string setup = tags.GetValueOrDefault("SetUp", "0");
             bool hasFen = tags.TryGetValue("FEN", out string? fen);
             if (setup is not ("0" or "1") || (setup == "1") != hasFen)
                 throw new FormatException("Custom starting positions require both SetUp=1 and a FEN tag.");
-            GameState game = Fen.Parse(hasFen ? fen! : Fen.InitialPosition);
+            bool crazyhouse = string.Equals(variant, "Crazyhouse", StringComparison.OrdinalIgnoreCase);
+            GameState game = Fen.Parse(hasFen ? fen! : crazyhouse ? Fen.CrazyhouseInitialPosition : Fen.InitialPosition);
+            if (crazyhouse != (game.Variant == GameVariant.Crazyhouse)) throw new FormatException("The PGN variant and FEN disagree.");
             game.SetPgnTags(tags);
             bool numberPending = false;
             while (reader.Peek() != '\0')
@@ -89,6 +91,8 @@ namespace ChessLogic
             foreach (string key in Roster)
                 tags.TryAdd(key, key == "Date" ? "????.??.??" : "?");
             tags["Result"] = ResultMarker(game);
+            if (game.Variant == GameVariant.Crazyhouse) tags["Variant"] = "Crazyhouse";
+            else tags.Remove("Variant");
             tags.Remove("SetUp"); tags.Remove("FEN");
             if (game.InitialFen != Fen.InitialPosition) { tags["SetUp"] = "1"; tags["FEN"] = game.InitialFen; }
             StringBuilder output = new();

@@ -16,7 +16,7 @@ namespace ChessLogic
         }
         public override Piece Copy()
         {
-            return new Knight(Colour) { HasMoved = this.HasMoved };
+            return new Knight(Colour) { HasMoved = this.HasMoved, IsPromoted = this.IsPromoted };
         }
 
         private static IEnumerable<Position> PotentialToPositions(Position from)

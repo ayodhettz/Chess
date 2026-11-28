@@ -24,7 +24,7 @@ namespace ChessLogic
         }
         public override Piece Copy()
         {
-            return new Bishop(Colour) { HasMoved = this.HasMoved };
+            return new Bishop(Colour) { HasMoved = this.HasMoved, IsPromoted = this.IsPromoted };
         }
         public override IEnumerable<Move> GetMoves(Position from, Board board)
         {

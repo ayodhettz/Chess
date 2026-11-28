@@ -9,6 +9,8 @@ namespace ChessLogic
     {
         public const string InitialPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+        public const string CrazyhouseInitialPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1";
+
         public static GameState Parse(string fen)
         {
             ArgumentNullException.ThrowIfNull(fen);
@@ -86,10 +88,19 @@ namespace ChessLogic
                     if (empty > 0) text.Append((char)('0' + empty));
                     empty = 0;
                     text.Append(PieceSymbol(piece));
+                    if (game.Variant == GameVariant.Crazyhouse && piece.IsPromoted) text.Append('~');
                 }
                 if (empty > 0) text.Append((char)('0' + empty));
             }
 
+            if (game.Variant == GameVariant.Crazyhouse)
+            {
+                text.Append('[');
+                foreach (Player owner in new[] { Player.White, Player.Black })
+                    foreach (PieceType type in new[] { PieceType.Pawn, PieceType.Knight, PieceType.Bishop, PieceType.Rook, PieceType.Queen })
+                        text.Append(PieceSymbol(Board.CreatePiece(type, owner)), game.Board.PocketCount(owner, type));
+                text.Append(']');
+            }
             text.Append(game.CurrentPlayer == Player.White ? " w " : " b ");
             string rights = CastlingRights(game.Board);
             text.Append(rights.Length == 0 ? "-" : rights);
@@ -104,15 +115,31 @@ namespace ChessLogic
 
         private static Board ParsePlacement(string placement)
         {
+            int bracket = placement.IndexOf('[');
+            bool crazyhouse = bracket >= 0;
+            string pocket = "";
+            if (crazyhouse)
+            {
+                if (!placement.EndsWith(']') || placement.IndexOf('[', bracket + 1) >= 0 || placement.IndexOf(']') != placement.Length - 1)
+                    throw new FormatException("Invalid Crazyhouse pocket placement.");
+                pocket = placement[(bracket + 1)..^1]; placement = placement[..bracket];
+            }
             string[] ranks = placement.Split('/');
             if (ranks.Length != 8) throw new FormatException("Piece placement must contain eight ranks.");
-            Board board = new();
+            Board board = new() { Variant = crazyhouse ? GameVariant.Crazyhouse : GameVariant.Standard };
             for (int row = 0; row < 8; row++)
             {
                 int col = 0;
                 bool previousWasDigit = false;
                 foreach (char symbol in ranks[row])
                 {
+                    if (symbol == '~')
+                    {
+                        if (!crazyhouse || col == 0 || board[row, col - 1] is not Piece promoted || promoted.IsPromoted ||
+                            promoted.Type is PieceType.Pawn or PieceType.King)
+                            throw new FormatException("Only a promoted non-pawn piece may have a promotion marker.");
+                        promoted.IsPromoted = true; continue;
+                    }
                     if (symbol is >= '1' and <= '8')
                     {
                         if (previousWasDigit) throw new FormatException("Use one digit for each run of empty squares.");
@@ -136,6 +163,14 @@ namespace ChessLogic
                 if (col != 8) throw new FormatException("Each rank must describe exactly eight squares.");
             }
 
+            foreach (char symbol in pocket)
+            {
+                Piece piece = CreatePiece(symbol);
+                if (piece.Type == PieceType.King) throw new FormatException("Kings cannot be pocketed.");
+                board.AddToPocket(piece.Colour, piece.Type);
+            }
+            if (crazyhouse && board.AllPositions().Count() + pocket.Length > 32)
+                throw new FormatException("A Crazyhouse position cannot contain more than 32 pieces including reserves.");
             Counting counts = board.CountPieces();
             if (counts.White(PieceType.King) != 1 || counts.Black(PieceType.King) != 1)
             {
@@ -144,7 +179,7 @@ namespace ChessLogic
             foreach (Player player in new[] { Player.White, Player.Black })
             {
                 int pawns = player == Player.White ? counts.White(PieceType.Pawn) : counts.Black(PieceType.Pawn);
-                if (board.PositionsOfPlayer(player).Count() > 16 || pawns > 8)
+                if (!crazyhouse && (board.PositionsOfPlayer(player).Count() > 16 || pawns > 8))
                 {
                     throw new FormatException("Each side can have at most sixteen pieces and eight pawns.");
                 }
@@ -193,7 +228,7 @@ namespace ChessLogic
                 int row = player == Player.White ? 7 : 0;
                 int rookCol = char.ToLowerInvariant(right) == 'k' ? 7 : 0;
                 if (board[row, 4] is not King king || king.Colour != player ||
-                    board[row, rookCol] is not Rook rook || rook.Colour != player)
+                    board[row, rookCol] is not Rook rook || rook.Colour != player || rook.IsPromoted)
                 {
                     throw new FormatException("Castling rights require the matching king and rook on their starting squares.");
                 }

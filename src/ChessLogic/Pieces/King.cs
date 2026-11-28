@@ -15,7 +15,7 @@
         }
         public override Piece Copy()
         {
-            return new King(Colour) { HasMoved = this.HasMoved };
+            return new King(Colour) { HasMoved = this.HasMoved, IsPromoted = this.IsPromoted };
         }
 
         private IEnumerable<Position> ValidMovePositions(Position from, Board board)

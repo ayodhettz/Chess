@@ -1,12 +1,18 @@
 namespace ChessLogic
 {
-    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null, Player? Responder = null, Player? Actor = null)
+    internal sealed record GameAction(string Kind, string? From = null, string? To = null, PieceType? Promotion = null, Player? Winner = null, Player? Responder = null, Player? Actor = null, PieceType? Drop = null)
     {
         internal static GameAction ForMove(string kind, Move move) =>
-            new(kind, Square(move.From), Square(move.To), (move as PawnPromotion)?.newType);
+            new(kind, move is DropMove ? null : Square(move.From), Square(move.To), (move as PawnPromotion)?.newType, Drop: (move as DropMove)?.PieceType);
 
         internal Move Resolve(GameState game)
         {
+            if (Drop is PieceType type)
+            {
+                if (From != null || Promotion != null) throw new FormatException("A drop cannot have a source or promotion.");
+                return game.LegalDrops(type).SingleOrDefault(move => move.To == ParseSquare(To))
+                    ?? throw new FormatException("The saved drop is illegal.");
+            }
             Position from = ParseSquare(From);
             Position to = ParseSquare(To);
             return game.LegalMoves(from).SingleOrDefault(move => move.To == to &&
@@ -19,6 +25,7 @@ namespace ChessLogic
             if (Kind != "result" && Winner != null) throw new FormatException("Only a recorded result can specify a winner.");
             if (Kind != "resign" && Actor != null) throw new FormatException("Only a resignation can specify an actor.");
             if (Kind is not ("accept" or "decline") && Responder != null) throw new FormatException("Only a draw response can specify a responder.");
+            if (Drop != null && Kind is not ("move" or "claim")) throw new FormatException("Only moves and intended claims can contain a drop.");
             switch (Kind)
             {
                 case "move": game.ApplyMove(Resolve(game)); break;

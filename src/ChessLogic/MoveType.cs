@@ -13,6 +13,7 @@ namespace ChessLogic
         CastlingQS,
         DoubleStep,
         EnPassant,
-        PawnPromotion
+        PawnPromotion,
+        Drop
     }
 }

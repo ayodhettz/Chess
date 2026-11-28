@@ -29,6 +29,7 @@ namespace ChessLogic
 
         public override string ToString()
         {
+            if (MoveType == MoveType.Drop) return San;
             if (MoveType == MoveType.CastlingKS) return "O-O";
             if (MoveType == MoveType.CastlingQS) return "O-O-O";
 

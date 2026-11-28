@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ChessLogic
 {
-    public class GameState
+    public partial class GameState
     {
         private readonly List<MoveRecord> history = new();
         private readonly Dictionary<string, int> positionCounts = new();
@@ -82,21 +82,27 @@ namespace ChessLogic
         public void ApplyMove(Move move)
         {
             EnsureActive();
-            Move legalMove = FindLegalMove(move);
-            string san = San.Format(this, legalMove);
-            PieceType pieceType = Board.GetPiece(legalMove.From).Type;
+            ApplyMoveCore(FindLegalMove(move), notation: true);
+        }
+
+        internal void ApplySearchMove(Move move) => ApplyMoveCore(move, notation: false);
+
+        private void ApplyMoveCore(Move legalMove, bool notation)
+        {
+            string san = notation ? San.Format(this, legalMove) : "";
+            PieceType pieceType = legalMove is DropMove drop ? drop.PieceType : Board.GetPiece(legalMove.From).Type;
             PieceType? capturedType = legalMove.Type == MoveType.EnPassant
                 ? PieceType.Pawn : Board[legalMove.To]?.Type;
             Snapshot previous = CaptureState();
 
             if (DrawOfferedBy == CurrentPlayer.Opponent()) DrawOfferedBy = null;
 
-            HalfMoveClock = pieceType == PieceType.Pawn || capturedType.HasValue
+            HalfMoveClock = legalMove is DropMove || pieceType == PieceType.Pawn || capturedType.HasValue
                 ? 0 : HalfMoveClock + 1;
 
             // The moving player's previous double step has now expired.
             Board.SetPawnSkipPosition(CurrentPlayer, null);
-            legalMove.Execute(Board);
+            Board.ExecuteMove(legalMove, CurrentPlayer);
             history.Add(new MoveRecord(CurrentPlayer, pieceType, legalMove, capturedType, FullMoveNumber, san));
             if (CurrentPlayer == Player.Black) FullMoveNumber++;
             CurrentPlayer = CurrentPlayer.Opponent();
@@ -113,7 +119,7 @@ namespace ChessLogic
                 return Enumerable.Empty<Move>();
             }
 
-            return Board.PositionsOfPlayer(player).SelectMany(MovesFrom);
+            return Board.PositionsOfPlayer(player).SelectMany(MovesFrom).Concat(DropsFor(player));
         }
 
         private IEnumerable<Move> MovesFrom(Position pos)
@@ -124,6 +130,10 @@ namespace ChessLogic
         private Move FindLegalMove(Move move)
         {
             ArgumentNullException.ThrowIfNull(move);
+            if (move is DropMove drop)
+                return drop.Player == CurrentPlayer ? LegalDrops(drop.PieceType).FirstOrDefault(candidate => candidate.To == drop.To)
+                    ?? throw new ArgumentException("The drop is not legal.", nameof(move))
+                    : throw new ArgumentException("The drop belongs to the other player.", nameof(move));
             Move? legalMove = LegalMoves(move.From).FirstOrDefault(candidate =>
                 candidate.To == move.To && candidate.Type == move.Type &&
                 (candidate is not PawnPromotion promotion ||
@@ -138,9 +148,11 @@ namespace ChessLogic
             return !IsGameOver() && ClaimReason(intendedMove).HasValue;
         }
 
+        internal bool CouldClaimAfterMove => (Variant == GameVariant.Standard && HalfMoveClock >= 99) || positionCounts.Values.Any(count => count >= 2);
+
         public bool CanClaimDrawWithIntendedMove()
         {
-            if (IsGameOver() || HalfMoveClock < 99 && !positionCounts.Values.Any(count => count >= 2)) return false;
+            if (IsGameOver() || !CouldClaimAfterMove) return false;
             return AllLegalMoves(CurrentPlayer).Any(move => CanClaimDraw(move));
         }
 
@@ -197,19 +209,19 @@ namespace ChessLogic
             if (intendedMove == null)
             {
                 if (CurrentPositionRepetitions >= 3) return EndReason.ThreefoldRepetition;
-                if (HalfMoveClock >= 100) return EndReason.FiftyMoveRule;
+                if (Variant == GameVariant.Standard && HalfMoveClock >= 100) return EndReason.FiftyMoveRule;
                 return null;
             }
 
             Move move = FindLegalMove(intendedMove);
-            bool resetsClock = Board[move.From] is Pawn || !Board.IsEmpty(move.To) || move.Type == MoveType.EnPassant;
+            bool resetsClock = move is DropMove || Board[move.From] is Pawn || !Board.IsEmpty(move.To) || move.Type == MoveType.EnPassant;
             Board copy = Board.Copy();
             copy.SetPawnSkipPosition(CurrentPlayer, null);
-            move.Execute(copy);
+            copy.ExecuteMove(move, CurrentPlayer);
             string key = PositionKey.Create(copy, CurrentPlayer.Opponent());
 
             if (positionCounts.GetValueOrDefault(key) >= 2) return EndReason.ThreefoldRepetition;
-            if (!resetsClock && HalfMoveClock >= 99) return EndReason.FiftyMoveRule;
+            if (Variant == GameVariant.Standard && !resetsClock && HalfMoveClock >= 99) return EndReason.FiftyMoveRule;
             return null;
         }
 
@@ -221,7 +233,7 @@ namespace ChessLogic
             if (player is not (Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(player));
             Snapshot previous = CaptureState();
             Player opponent = player.Opponent();
-            bool opponentHasMaterial = Board.PositionsOfPlayer(opponent)
+            bool opponentHasMaterial = Variant == GameVariant.Crazyhouse || Board.PositionsOfPlayer(opponent)
                 .Any(pos => Board.GetPiece(pos).Type != PieceType.King);
             Result = new Result(opponentHasMaterial ? opponent : Player.None, EndReason.Resignation, player);
             DrawOfferedBy = null;
@@ -329,7 +341,7 @@ namespace ChessLogic
                     Result = Result.DrawByStalemate(EndReason.Stalemate);
                 }
             }
-            else if (Board.InsufficientMaterial())
+            else if (Variant == GameVariant.Standard && Board.InsufficientMaterial())
             {
                 Result = Result.DrawByStalemate(EndReason.InsufficientMaterial);
             }
@@ -337,7 +349,7 @@ namespace ChessLogic
             {
                 Result = Result.DrawByStalemate(EndReason.FivefoldRepetition);
             }
-            else if (HalfMoveClock >= 150)
+            else if (Variant == GameVariant.Standard && HalfMoveClock >= 150)
             {
                 Result = Result.DrawByStalemate(EndReason.SeventyFiveMoveRule);
             }

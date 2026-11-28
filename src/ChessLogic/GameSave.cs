@@ -22,7 +22,7 @@ namespace ChessLogic
             if (game.Actions.Count > MaxActions) throw new FormatException($"A save can contain at most {MaxActions} actions.");
             string text = JsonSerializer.Serialize(new Document
             {
-                Version = game.Actions.Any(action => action.Actor != null) ? 4 :
+                Version = game.Variant == GameVariant.Crazyhouse ? 5 : game.Actions.Any(action => action.Actor != null) ? 4 :
                     game.Actions.Any(action => action.Kind is "offer" or "accept" or "decline") ? 3 :
                     game.PgnTags.Count > 0 || game.Actions.Any(action => action.Kind == "result") ? 2 : 1,
                 InitialFen = game.InitialFen, Actions = game.Actions.ToArray(), Cursor = game.ActionCursor,
@@ -45,7 +45,7 @@ namespace ChessLogic
             {
                 throw new FormatException("The save file contains invalid or unsupported JSON.", error);
             }
-            if (document.Version is not (1 or 2 or 3 or 4)) throw new FormatException("This save-file version is not supported.");
+            if (document.Version is not (1 or 2 or 3 or 4 or 5)) throw new FormatException("This save-file version is not supported.");
             if (document.Version < 4 && document.Actions?.Any(action => action?.Actor != null) == true)
                 throw new FormatException("Explicit resignation actors require save-file version 4.");
             if (document.InitialFen == null || document.Actions == null || document.Actions.Length > MaxActions ||
@@ -57,6 +57,8 @@ namespace ChessLogic
                 throw new FormatException("Draw offers require save-file version 3.");
 
             GameState game = Fen.Parse(document.InitialFen);
+            if (document.Version < 5 && (game.Variant != GameVariant.Standard || document.Actions.Any(action => action?.Drop != null)))
+                throw new FormatException("Crazyhouse requires save-file version 5.");
             if (document.Tags != null) game.SetPgnTags(document.Tags);
             for (int index = 0; index < document.Actions.Length; index++)
             {
