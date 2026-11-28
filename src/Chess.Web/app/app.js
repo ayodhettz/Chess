@@ -1,5 +1,6 @@
 import { GameSession, invitation, normalizeCode, parseFen, squares, outcome, errorCode } from './session.js';
 const $ = id => document.getElementById(id);
+function updateText(id, value) { if ($(id).textContent !== value) $(id).textContent = value; }
 const names = {p:'Pawn',r:'Rook',n:'Knight',b:'Bishop',q:'Queen',k:'King'};
 const initial = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const title = value => value[0].toUpperCase() + value.slice(1);
@@ -166,8 +167,8 @@ function render() {
       banner.classList.toggle('result-arrival', observedGames.has(state.code));
     }
   }
-  $('turn').textContent = outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move${state.checkedSquare ? ' — check' : ''}`);
-  $('game-status').textContent = state.result ? (state.result.winner == null ? 'Game over · draw.' : state.result.winner === own ? 'Game over · you win.' : 'Game over · you lose.') : state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.';
+  updateText('turn', outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move${state.checkedSquare ? ' — check' : ''}`));
+  updateText('game-status', state.result ? (state.result.winner == null ? 'Game over · draw.' : state.result.winner === own ? 'Game over · you win.' : 'Game over · you lose.') : state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.');
   $('opponent-label').textContent = state.computerSeat ? 'Computer · custom engine' : `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
   $('match-label').textContent = state.computerSeat ? 'Computer game' : 'Online game';
   $('invitation-panel').hidden = !!state.computerSeat;
