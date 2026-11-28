@@ -15,7 +15,7 @@ public sealed class ComputerPlayer(RoomDirectory rooms, IHubContext<GameHub, IGa
             foreach (ComputerWork work in rooms.TakeComputerTurns())
             {
                 BotDecision? decision = null;
-                try { decision = await new ChessBot().ChooseMoveAsync(work.Position, stoppingToken); }
+                try { decision = await new ChessBot().ChooseMoveAsync(work.Position, work.Difficulty, stoppingToken); }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
                 catch (Exception error) { logger.LogError(error, "Computer search failed."); }
                 RoomUpdate? update = rooms.CompleteComputerTurn(work, decision);
