@@ -2,6 +2,9 @@
 
 The Windows UI implements the approved [Figma C direction](https://www.figma.com/design/kZvgLU33gETM4Hn66bSyHx?node-id=4-1674).
 
+Later Tournament II and Folio Figma explorations are review drafts; they have not
+replaced the implemented Tournament C interface.
+
 ![Tournament setup](start-game.png)
 
 Setup pairs a plain opponent/colour form with the real starting board. The selected
