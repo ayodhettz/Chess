@@ -38,7 +38,11 @@ in the invitation, clipboard, URL, or diagnostic output.
 
 Server restarts and room expiry still end sessions. Online games do not expose local
 undo, FEN replacement, file loading, bot hints, or other offline-only game mutation.
-Use **New game** to return to setup. There is no account, rating, or matchmaking yet.
+Use **New game** to return to setup. There are no accounts or ratings.
+Choose **Find a match** and **Cancel search** in the lobby to search for a random
+opponent. Colours are assigned randomly; both players must use the same server.
+A paired game uses the existing private seat and recovery rules.
+See the [hosting guide](public-hosting.md) for the public server's PC dependency.
 
 ## Client and checks
 

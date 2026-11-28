@@ -29,6 +29,14 @@
                             <RadioButton x:Name="BlackRadio" GroupName="Colour" Content="Black" Style="{StaticResource ChoiceStyle}" Checked="Colour_Changed" Margin="4,0,0,0"/>
                         </UniformGrid>
                     </StackPanel>
+                    <StackPanel x:Name="DifficultyPanel" Margin="0,0,0,16">
+                        <TextBlock Text="Difficulty" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
+                        <UniformGrid Rows="1" Columns="3">
+                            <RadioButton x:Name="EasyDifficulty" GroupName="Difficulty" Content="Easy" Style="{StaticResource ChoiceStyle}"/>
+                            <RadioButton GroupName="Difficulty" Content="Medium" IsChecked="True" Style="{StaticResource ChoiceStyle}"/>
+                            <RadioButton x:Name="HardDifficulty" GroupName="Difficulty" Content="Hard" Style="{StaticResource ChoiceStyle}"/>
+                        </UniformGrid>
+                    </StackPanel>
                     <Button x:Name="StartGameButton" Content="Take White &amp; play" Style="{StaticResource PrimaryButtonStyle}" Click="StartGame_Click" Height="44"/>
                     <Button Content="Play online" Style="{StaticResource ButtonStyle}" Click="Online_Click" Margin="0,12,0,0"/>
                     <Button Content="Open saved game" Style="{StaticResource LinkButtonStyle}" Click="OpenGame_Click" Margin="0,22,0,0"/>
