@@ -37,7 +37,7 @@ namespace ChessUI
 
         public MainWindow(Player? humanPlayer) : this(humanPlayer, null) { }
 
-        public MainWindow(Player? humanPlayer, GameState? initialGame, BotDifficulty difficulty = BotDifficulty.Medium)
+        public MainWindow(Player? humanPlayer, GameState? initialGame, BotDifficulty difficulty = BotDifficulty.Medium, GameVariant variant = GameVariant.Standard)
         {
             if (humanPlayer is not (null or Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(humanPlayer));
             _ = BotSearchLimits.For(difficulty);
@@ -46,13 +46,30 @@ namespace ChessUI
             InitializeComponent();
             InitializeBoard();
 
-            gameState = initialGame ?? new GameState(Board.Initial(), Player.White);
+            gameState = initialGame ?? new GameState(Board.Initial(variant), Player.White);
             DrawBoard(gameState.Board);
             SetCursor(gameState.CurrentPlayer);
             UpdateStatus();
             if (gameState.IsGameOver()) ShowGameOverMenu();
             Closed += (_, _) => { windowClosed = true; botCancellation?.Cancel(); };
             Loaded += (_, _) => { sessionStarted = true; UpdateStatus(); };
+        }
+
+        private void UpdateReserves()
+        {
+            ReservePanel.Visibility = gameState.Variant == GameVariant.Crazyhouse ? Visibility.Visible : Visibility.Collapsed;
+            Player own = humanPlayer ?? gameState.CurrentPlayer;
+            OwnReserve.Update(own, type => gameState.Board.PocketCount(own, type), CanHumanAct(), SelectReserve);
+            OpponentReserve.Update(own.Opponent(), type => gameState.Board.PocketCount(own.Opponent(), type), false, _ => { });
+        }
+
+        private void SelectReserve(PieceType type)
+        {
+            if (!CanHumanAct()) return;
+            Move[] drops = gameState.LegalDrops(type).ToArray();
+            if (drops.Length == 0) return;
+            ClearHighlights(); selectedPosition = drops[0].From;
+            CacheMoves(drops); HighlightMoves();
         }
 
         private void InitializeBoard()
@@ -268,7 +285,7 @@ namespace ChessUI
 
         private void RestartGame()
         {
-            LoadGame(new GameState(Board.Initial(), Player.White));
+            LoadGame(new GameState(Board.Initial(gameState.Variant), Player.White));
         }
 
         private void LoadGame(GameState game)
@@ -398,7 +415,8 @@ namespace ChessUI
                 for (int col = 0; col < 8; col++)
                     checkSquares[row, col].Fill = checkedKing == new Position(row, col)
                         ? new SolidColorBrush(Color.FromArgb(190, 190, 48, 40)) : Brushes.Transparent;
-            MatchTitleText.Text = humanPlayer == null ? "Local two-player" : "You vs Computer";
+            MatchTitleText.Text = (gameState.Variant == GameVariant.Crazyhouse ? "Crazyhouse · " : "") + (humanPlayer == null ? "Local two-player" : "You vs Computer");
+            UpdateReserves();
             OpponentText.Text = humanPlayer == null ? "Black" : "Computer";
             HumanText.Text = humanPlayer == null ? "White" : "You";
             OpponentColourText.Text = (humanPlayer?.Opponent() ?? Player.Black).ToString();

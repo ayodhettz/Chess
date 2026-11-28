@@ -55,15 +55,17 @@ public partial class OnlineWindow : Window
         session.Changed += () => { if (!closed && !Dispatcher.HasShutdownStarted) _ = Dispatcher.InvokeAsync(Render); };
     }
 
+    private ChessVariant SelectedVariant => CrazyhouseRadio.IsChecked == true ? ChessVariant.Crazyhouse : ChessVariant.Standard;
+
     private async void Create_Click(object sender, RoutedEventArgs e) => await Run(async () =>
     {
         PrepareSession();
-        await session!.CreateAsync(PreferWhite.IsChecked == true ? Seat.White : Seat.Black);
+        await session!.CreateAsync(PreferWhite.IsChecked == true ? Seat.White : Seat.Black, SelectedVariant);
     });
 
     private async void FindMatch_Click(object sender, RoutedEventArgs e) => await Run(async () =>
     {
-        PrepareSession(); await session!.FindMatchAsync();
+        PrepareSession(); await session!.FindMatchAsync(SelectedVariant);
     });
     private void CancelSearch_Click(object sender, RoutedEventArgs e) => session?.CancelSearch();
 
@@ -140,6 +142,7 @@ public partial class OnlineWindow : Window
     {
         if (closed) return;
         FindMatch.IsEnabled = session?.Busy != true;
+        StandardRadio.IsEnabled = CrazyhouseRadio.IsEnabled = session?.Busy != true;
         CancelSearch.Visibility = SearchStatus.Visibility = session?.Searching == true ? Visibility.Visible : Visibility.Collapsed;
         CreateRoom.IsEnabled = JoinRoom.IsEnabled = session?.Busy != true;
         ServerAddress.IsEnabled = RoomInput.IsEnabled = session == null;
@@ -171,9 +174,14 @@ public partial class OnlineWindow : Window
             AutomationProperties.SetHelpText(button, check ? "King in check" : "");
             AutomationProperties.SetName(button, $"{name}, {(piece == null ? "empty" : $"{piece.Colour} {piece.Type}")}");
         }
+        ReservePanel.Visibility = state.Variant == ChessVariant.Crazyhouse ? Visibility.Visible : Visibility.Collapsed;
+        Player own = ticket.Seat == Seat.White ? Player.White : Player.Black;
+        OwnReserve.Update(own, type => position.Board.PocketCount(own, type), CanMove,
+            type => { selected = "@" + type.ToString().ToLowerInvariant(); Render(); });
+        OpponentReserve.Update(own.Opponent(), type => position.Board.PocketCount(own.Opponent(), type), false, _ => { });
         bool ownTurn = state.Turn == ticket.Seat;
         bool opponentConnected = ticket.Seat == Seat.White ? state.BlackConnected : state.WhiteConnected;
-        Players.Text = $"You: {ticket.Seat} · Opponent: {(opponentConnected ? "online" : "offline")}";
+        Players.Text = (state.Variant == ChessVariant.Crazyhouse ? "Crazyhouse · " : "") + $"You: {ticket.Seat} · Opponent: {(opponentConnected ? "online" : "offline")}";
         Turn.Text = state.Status == RoomStatus.Closed ? "Room closed" : state.Result is GameOutcome result
             ? $"{(result.Winner == null ? "Draw" : $"{result.Winner} wins")} · {result.Reason}"
             : state.Status == RoomStatus.Waiting ? "Waiting for a player" : $"{state.Turn} to move";

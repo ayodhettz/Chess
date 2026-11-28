@@ -13,6 +13,10 @@
                     <TextBlock Text="Play with someone online" FontFamily="{StaticResource HeadingFont}" FontSize="28" Margin="0,0,0,12"/>
                     <TextBlock Text="Server address" Foreground="{StaticResource MutedColor}"/>
                     <TextBox Background="{StaticResource ButtonColor}" Foreground="{StaticResource TextColor}" BorderBrush="{StaticResource StrokeColor}" CaretBrush="{StaticResource TextColor}" x:Name="ServerAddress" Text="https://ayodhettz-chess.vercel.app" Padding="10" FontSize="15" Margin="0,5,0,12" AutomationProperties.Name="Server address"/>
+                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,12">
+                        <RadioButton x:Name="StandardRadio" GroupName="Variant" Content="Standard" IsChecked="True" Style="{StaticResource ChoiceStyle}" Margin="0,0,4,0"/>
+                        <RadioButton x:Name="CrazyhouseRadio" GroupName="Variant" Content="Crazyhouse" Style="{StaticResource ChoiceStyle}" Margin="4,0,0,0"/>
+                    </UniformGrid>
                     <WrapPanel>
                         <RadioButton x:Name="PreferWhite" Content="White" IsChecked="True" GroupName="Seat" Foreground="{StaticResource TextColor}" Margin="0,12,16,0"/>
                         <RadioButton Content="Black" GroupName="Seat" Foreground="{StaticResource TextColor}" Margin="0,12,16,0"/>
@@ -39,6 +43,12 @@
                 <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto"><StackPanel>
                     <Border x:Name="OutcomePanel" BorderThickness="2" BorderBrush="Transparent" Padding="8"><TextBlock x:Name="Turn" FontFamily="{StaticResource HeadingFont}" FontSize="25" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/></Border>
                     <TextBlock x:Name="ConnectionStatus" Foreground="{StaticResource MutedColor}" Margin="0,10,0,16" TextWrapping="Wrap"/>
+<StackPanel x:Name="ReservePanel" Visibility="Collapsed" Margin="0,0,0,16">
+    <TextBlock Text="Opponent reserve" Foreground="{StaticResource MutedColor}" Margin="0,0,0,6"/>
+    <local:ReserveBar x:Name="OpponentReserve"/>
+    <TextBlock Text="Your reserve · select a piece to drop" Foreground="{StaticResource MutedColor}" TextWrapping="Wrap" Margin="0,12,0,6"/>
+    <local:ReserveBar x:Name="OwnReserve"/>
+</StackPanel>
                     <TextBlock x:Name="RoomLabel" FontFamily="{StaticResource MonoFont}" Margin="0,0,0,8"/>
                     <Button Content="Copy invitation" Style="{StaticResource LinkButtonStyle}" Click="Copy_Click" Margin="0,0,0,12"/>
                     <TextBlock Text="Moves                 White / Black" Foreground="{StaticResource MutedColor}"/>

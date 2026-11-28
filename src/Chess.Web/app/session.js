@@ -16,7 +16,7 @@ export function invitation(location, code) {
 }
 
 export function parseFen(fen) {
-  const ranks = fen.split(' ')[0].split('/');
+  const ranks = fen.split(' ')[0].replace(/\[[PNBRQpnbrq]*\]$/, '').replace(/([NBRQnbrq])~/g, '$1').split('/');
   if (ranks.length !== 8) throw new Error('The server sent an invalid board.');
   const board = new Map();
   ranks.forEach((rank, row) => {
@@ -130,11 +130,11 @@ export class GameSession {
       this.ticket = null; this.state = null;
       await this.connect();
       let ticket;
-      if (method === 'FindMatch') {
+      if (method === 'FindVariantMatch') {
         this.searching = true; this.changed();
         try {
           while (this.searching && !ticket) {
-            ticket = await this.hub.invoke('FindMatch');
+            ticket = await this.hub.invoke(method, ...args);
             if (!ticket) await new Promise(resolve => setTimeout(resolve, 1000));
           }
           ticket ??= await this.hub.invoke('CancelMatch');
@@ -153,13 +153,13 @@ export class GameSession {
     } finally { this.busy = false; this.changed(); this.continueResume(); }
   }
 
-  computer(seat, difficulty = 'medium') { return this.enter('CreateComputerGame', seat, difficulty); }
+  computer(seat, difficulty = 'medium', variant = 'standard') { return this.enter('CreateVariantComputerGame', seat, difficulty, variant); }
 
-  findMatch() { return this.enter('FindMatch'); }
+  findMatch(variant = 'standard') { return this.enter('FindVariantMatch', variant); }
   cancelSearch() { this.searching = false; this.changed(); }
 
-  create(seat) { return this.enter('CreateRoom', seat); }
-  join(code) { return this.enter('JoinRoom', normalizeCode(code)); }
+  create(seat, variant = 'standard') { return this.enter('CreateVariantRoom', seat, variant); }
+  join(code) { return this.enter('JoinGame', normalizeCode(code)); }
 
   async resume() {
     if (!this.ticket || this.busy) return;
@@ -170,7 +170,7 @@ export class GameSession {
         this.requireState(await this.hub.invoke('GetState'));
       } catch (error) {
         if (errorCode(error) !== 'not_seated') throw error;
-        const ticket = await this.hub.invoke('ResumeRoom', this.ticket.code, this.ticket.credential);
+        const ticket = await this.hub.invoke('ResumeGame', this.ticket.code, this.ticket.credential);
         this.requireState(ticket.state);
       }
       this.requireState(await this.hub.invoke('GetState'));

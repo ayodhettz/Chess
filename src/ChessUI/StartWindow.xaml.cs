@@ -38,6 +38,8 @@ public partial class StartWindow : Window
             };
     }
 
+    internal GameVariant SelectedVariant => CrazyhouseRadio.IsChecked == true ? GameVariant.Crazyhouse : GameVariant.Standard;
+
     internal Player? SelectedHumanPlayer => BotModeRadio.IsChecked == true
         ? BlackRadio.IsChecked == true ? Player.Black : Player.White : null;
 
@@ -50,7 +52,7 @@ public partial class StartWindow : Window
 
     private void OpenMatch(GameState? game)
     {
-        MainWindow window = new(SelectedHumanPlayer, game, EasyDifficulty.IsChecked == true ? BotDifficulty.Easy : HardDifficulty.IsChecked == true ? BotDifficulty.Hard : BotDifficulty.Medium);
+        MainWindow window = new(SelectedHumanPlayer, game, EasyDifficulty.IsChecked == true ? BotDifficulty.Easy : HardDifficulty.IsChecked == true ? BotDifficulty.Hard : BotDifficulty.Medium, SelectedVariant);
         Application.Current.MainWindow = window;
         window.Show();
         Close();

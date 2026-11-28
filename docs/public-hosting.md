@@ -23,7 +23,7 @@ seat credentials out of the repository.
 
 ## Render deployment files
 
-`Dockerfile` builds the browser assets with Node 24, publishes the portable .NET 10
+`Dockerfile` builds the browser assets with Node 26, publishes the portable .NET 10
 server, and runs only the ASP.NET runtime as a non-root user on port 8080.
 `render.yaml` creates one **Free** Docker web service in Singapore, uses `/health`,
 and enables deployment only after the linked branch's checks pass. No database,

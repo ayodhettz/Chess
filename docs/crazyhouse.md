@@ -12,6 +12,22 @@ Like that implementation, it does not use automatic insufficient-material or
 fifty/seventy-five-move draws. Repetition, draw agreements and resignation remain
 available. A legal blocking drop prevents a false checkmate or stalemate result.
 
+## Playing
+
+Choose **Crazyhouse** under **Rules** before starting a Windows local/computer game
+or a browser game. The Windows online lobby also offers Standard and Crazyhouse.
+Private invitations use the host's rules automatically; random searches pair only
+players searching for the same variant. All three bot difficulties support drops.
+
+Your reserve shows how many captured pieces you can use. Select a reserve piece,
+then a highlighted empty square to drop it instead of moving a board piece.
+The opponent's reserve is visible too. In local two-player games, “Your reserve”
+follows the side to move. Online drops are validated by the server and recovered
+with the rest of the position after reconnect or browser reload.
+
+Rematches keep the variant. Windows saves, PGN and FEN identify Crazyhouse
+automatically when loaded; the opponent and human colour still follow UI settings.
+
 ## Position and game files
 
 Crazyhouse FEN appends reserves in brackets to piece placement, for example

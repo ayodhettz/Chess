@@ -49,17 +49,49 @@ public sealed class GameHub(RoomDirectory rooms) : Hub<IGameClient>
 
     public async Task<SeatTicket> JoinRoom(string code)
     {
-        RoomLease lease = Guard(() => rooms.Join(Context.ConnectionId, code));
+        RoomLease lease = Guard(() => rooms.Join(Context.ConnectionId, code, supportsCrazyhouse: false));
         await Publish(lease.Update);
         return lease.Ticket;
     }
 
     public async Task<SeatTicket> ResumeRoom(string code, string credential)
     {
+        RoomLease lease = Guard(() => rooms.Resume(Context.ConnectionId, code, credential, supportsCrazyhouse: false));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
+    public async Task<SeatTicket> CreateVariantRoom(Seat seat, ChessVariant variant)
+    {
+        RoomLease lease = Guard(() => rooms.Create(Context.ConnectionId, seat, variant: variant));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
+    public async Task<SeatTicket> CreateVariantComputerGame(Seat seat, string difficulty, ChessVariant variant)
+    {
+        if (!Enum.TryParse<ChessLogic.BotDifficulty>(difficulty, true, out var level) || !Enum.IsDefined(level))
+            throw new HubException("invalid_difficulty: Choose Easy, Medium, or Hard.");
+        RoomLease lease = Guard(() => rooms.Create(Context.ConnectionId, seat, computer: true, difficulty: level, variant: variant));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
+    public async Task<SeatTicket> JoinGame(string code)
+    {
+        RoomLease lease = Guard(() => rooms.Join(Context.ConnectionId, code));
+        await Publish(lease.Update);
+        return lease.Ticket;
+    }
+
+    public async Task<SeatTicket> ResumeGame(string code, string credential)
+    {
         RoomLease lease = Guard(() => rooms.Resume(Context.ConnectionId, code, credential));
         await Publish(lease.Update);
         return lease.Ticket;
     }
+
+    public Task<SeatTicket?> FindVariantMatch(ChessVariant variant) => Task.FromResult(Guard(() => rooms.FindMatch(Context.ConnectionId, variant)));
 
     public Task<SeatTicket?> FindMatch() => Task.FromResult(Guard(() => rooms.FindMatch(Context.ConnectionId)));
     public Task<SeatTicket?> CancelMatch() => Task.FromResult(Guard(() => rooms.CancelMatch(Context.ConnectionId)));

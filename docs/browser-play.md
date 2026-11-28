@@ -26,6 +26,12 @@ runs the asset-copy script, with no package downloads during the build itself.
 
 ## Playing and recovery
 
+Choose **Standard** or **Crazyhouse** under Rules before creating a room, starting
+a computer game, or finding a random match. Random searches use separate queues
+for each ruleset. Joining an invitation adopts the room's rules automatically.
+In [Crazyhouse](crazyhouse.md), select a piece from your reserve and then a legal
+empty square to drop it. Both players' reserves survive reload and reconnect.
+
 Select a piece and a highlighted destination. Use arrow keys to move board focus,
 and Enter or Space to select a square. Promotion asks for queen, rook, bishop, or
 knight. The board faces your chosen side and adapts to narrow screens.
