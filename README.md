@@ -1,7 +1,8 @@
 # Chess
 
-A Windows chess application built with C#, .NET 10 LTS, and WPF. Play against a
-custom-built bot or share the board in local two-player mode. The Tournament UI
+A chess project with a Windows WPF app, a browser client, and a shared C#/.NET 10
+server. Play against a custom-built bot, share a local board on Windows, or play
+online with a friend across Windows and browser clients. The Tournament UI
 uses a charcoal gradient, restrained brass accents, and a traditional move scoresheet.
 
 | Start a game | Play against the bot |
@@ -9,6 +10,14 @@ uses a charcoal gradient, restrained brass accents, and a traditional move score
 | ![Choose an opponent and colour](docs/start-game.png) | ![Tournament board and move scoresheet](docs/bot.png) |
 
 The original foundation follows [OttoBotCode's chess tutorial](https://www.youtube.com/@OttoBotCode).
+
+## Feature availability
+
+Current `main` supports computer games and private online rooms on web and Windows.
+[PR #37](https://github.com/ayodhettz/Chess/pull/37) adds Easy/Medium/Hard bot levels;
+[PR #38](https://github.com/ayodhettz/Chess/pull/38) adds cancellable random matchmaking.
+Both are open as of 22 November 2026; these additions are not yet merged or confirmed
+live. New Figma explorations are design drafts, not the implemented interface.
 
 ## Playing
 
@@ -40,8 +49,8 @@ pruning, then scores material and piece placement. The current baseline searches
 to three plies within a 4,000-visit budget, using the last completed iteration.
 It handles promotions, draw claims, and responses to draw offers.
 
-This is a starting engine with no difficulty selector or strength rating; it can miss
-tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
+Main still has the fixed baseline search and no strength rating; difficulty selection
+is pending in PR #37 above. The engine can miss tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 
 ## Build and run
 
@@ -138,9 +147,10 @@ The `Windows build and tests` check is required before merging into `main`.
 
 ## Public hosting
 
-A [free Render deployment guide](docs/public-hosting.md) includes the Docker image,
-Blueprint setup, HTTPS-origin configuration, and free-tier room-reset behavior.
 
-### Computer difficulty
+The [public hosting guide](docs/public-hosting.md) explains the current Vercel +
+Cloudflare Tunnel + PC setup and optional Render Free Docker deployment.
+Render requested a payment card on the owner's account, so it is not the current
+backend. Hosting files are already on main; there is no hosting PR prerequisite.
+The public web game requires its backend to remain online.
 
-Choose Easy (1 ply / 500 nodes), Medium (3 plies / 4,000 nodes), or Hard (5 plies / 30,000 nodes) before starting a computer game in Windows or the browser. Medium retains the original settings. These are search limits, not Elo ratings; the bot uses the last fully completed depth within its node budget. Suggestions use Medium. The web bot still runs on the chess server.
