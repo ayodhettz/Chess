@@ -61,7 +61,7 @@ namespace ChessLogic
 
         public string ToFen() => Fen.Format(this);
 
-        internal GameState CopyForAnalysis()
+        public GameState CopyForAnalysis()
         {
             GameState copy = new(Board.Copy(), CurrentPlayer, HalfMoveClock, FullMoveNumber);
             copy.RestoreState(CaptureState());

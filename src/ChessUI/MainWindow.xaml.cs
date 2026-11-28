@@ -35,9 +35,11 @@ namespace ChessUI
 
         public MainWindow(Player? humanPlayer) : this(humanPlayer, null) { }
 
-        public MainWindow(Player? humanPlayer, GameState? initialGame)
+        public MainWindow(Player? humanPlayer, GameState? initialGame, BotDifficulty difficulty = BotDifficulty.Medium)
         {
             if (humanPlayer is not (null or Player.White or Player.Black)) throw new ArgumentOutOfRangeException(nameof(humanPlayer));
+            _ = BotSearchLimits.For(difficulty);
+            botDifficulty = difficulty;
             this.humanPlayer = humanPlayer;
             InitializeComponent();
             InitializeBoard();

@@ -1,5 +1,8 @@
 # SAN notation and PGN exchange
 
+These file/history controls apply to offline Windows games. Browser and Windows
+online matches do not support local game replacement or undo.
+
 ![SAN move history](pgn.png)
 
 Move history now shows Standard Algebraic Notation: `Nf3`, `exd5`, `O-O`, `e8=Q+`, and `Qh4#`.

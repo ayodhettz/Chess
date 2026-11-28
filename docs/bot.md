@@ -18,6 +18,19 @@ opening the pause menu; **Resume bot** continues a stopped bot turn. Undo can ca
 an in-flight reply. Board actions and file operations are disabled while thinking.
 Closing the window or replacing the position discards pending results.
 
+## Difficulty levels and execution
+
+Choose Easy (1 ply / 500 visits), Medium (3 / 4,000), or Hard (5 / 30,000)
+before starting a computer game in Windows or the browser. Medium preserves the
+original settings; suggestions use Medium. These are search budgets, not Elo ratings.
+The budget can stop search before maximum depth. Deployment must include the new
+server and client before a public visitor can use the selector.
+
+Offline Windows searches run inside the Windows app. Browser computer games run
+inside the C# server, not Vercel or the visitor's browser. The current public backend
+runs on the owner's PC through Cloudflare Tunnel and must stay online. See
+[public hosting](public-hosting.md) and [browser play](browser-play.md).
+
 ## Suggestions
 
 ![A suggestion highlights a move without playing it](suggestion.png)
@@ -89,7 +102,8 @@ cost varies with the position and computer. Cancellation is checked during searc
 The shallow horizon can miss tactics just beyond its depth. There is no quiescence
 search, transposition table, advanced king safety, or endgame knowledge yet. Next steps
 are quiescence search to finish tactical exchanges before scoring, and faster search
-to support deeper difficulty levels. The search strength is unchanged by automatic mode.
+to make deeper levels more efficient. Automatic play itself does not change search
+strength; difficulty selection is tracked separately above.
 
 Tests cover mates for both colours, captures and defended pieces, promotion, draw
 choices, bounded search, cancellation, snapshot isolation, automatic replies, both
