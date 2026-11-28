@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ChessLogic
 {
-    public class Board
+    public partial class Board
     {
         private readonly Piece?[,] pieces = new Piece?[8, 8];
 
@@ -30,9 +30,10 @@ namespace ChessLogic
             set { pieces[pos.Row, pos.Column] = value; }
         }
 
-        public static Board Initial()
+        public static Board Initial(GameVariant variant = GameVariant.Standard)
         {
-            Board board = new Board();
+            if (!Enum.IsDefined(variant)) throw new ArgumentOutOfRangeException(nameof(variant));
+            Board board = new Board { Variant = variant };
             board.AddStartingPieces();
             return board;
         }
@@ -114,6 +115,7 @@ namespace ChessLogic
 
         internal void RestoreFrom(Board source)
         {
+            CopyVariantFrom(source);
             for (int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++)

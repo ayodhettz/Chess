@@ -23,6 +23,7 @@ namespace ChessLogic
             string clean = input.TrimEnd('!', '?');
             if (input.Length - clean.Length > 2) throw new FormatException("Invalid SAN annotation.");
             clean = clean.Replace('0', 'O');
+            if (clean.StartsWith("P@", StringComparison.Ordinal)) clean = clean[1..];
             bool hasSuffix = clean.EndsWith('+') || clean.EndsWith('#');
             Move[] legal = game.AllLegalMoves(game.CurrentPlayer).ToArray();
             Move[] matches = legal.Where(move =>
@@ -35,9 +36,10 @@ namespace ChessLogic
 
         private static string FormatLegal(GameState game, Move move, Move[] legal)
         {
-            Piece piece = game.Board.GetPiece(move.From);
+            Piece piece = move is DropMove reserve ? Board.CreatePiece(reserve.PieceType, reserve.Player) : game.Board.GetPiece(move.From);
             string body;
-            if (move.Type == MoveType.CastlingKS) body = "O-O";
+            if (move is DropMove dropped) body = (dropped.PieceType == PieceType.Pawn ? "" : Letter(dropped.PieceType).ToString()) + "@" + Square(move.To);
+            else if (move.Type == MoveType.CastlingKS) body = "O-O";
             else if (move.Type == MoveType.CastlingQS) body = "O-O-O";
             else
             {
@@ -50,7 +52,7 @@ namespace ChessLogic
                 else
                 {
                     origin = Letter(piece.Type).ToString();
-                    Move[] others = legal.Where(candidate => candidate.To == move.To && candidate.From != move.From &&
+                    Move[] others = legal.Where(candidate => candidate is not DropMove && candidate.To == move.To && candidate.From != move.From &&
                         game.Board.GetPiece(candidate.From).Type == piece.Type).ToArray();
                     if (others.Length > 0)
                     {
@@ -65,12 +67,11 @@ namespace ChessLogic
 
             Board copy = game.Board.Copy();
             copy.SetPawnSkipPosition(game.CurrentPlayer, null);
-            move.Execute(copy);
+            copy.ExecuteMove(move, game.CurrentPlayer);
             Player opponent = game.CurrentPlayer.Opponent();
             if (!copy.IsInCheck(opponent)) return body;
             // Checkmate depends on legal replies, not automatic draw status.
-            bool reply = copy.PositionsOfPlayer(opponent).SelectMany(pos => copy.GetPiece(pos).GetMoves(pos, copy))
-                .Any(candidate => candidate.IsLegal(copy));
+            bool reply = new GameState(copy, opponent).Result?.Reason != EndReason.Checkmate;
             return body + (reply ? "+" : "#");
         }
 

@@ -12,6 +12,7 @@ namespace ChessLogic
         public abstract PieceType Type { get; }
         public abstract Player Colour { get; }
         public bool HasMoved { get; set; } = false;
+        public bool IsPromoted { get; internal set; }
         public abstract Piece Copy();
 
         public abstract IEnumerable<Move> GetMoves(Position from, Board board);

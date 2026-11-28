@@ -21,7 +21,7 @@ namespace ChessLogic
         }
         public override Piece Copy()
         {
-            return new Pawn(Colour) { HasMoved = this.HasMoved };
+            return new Pawn(Colour) { HasMoved = this.HasMoved, IsPromoted = this.IsPromoted };
         }
 
         private static bool CanMoveTo(Position pos, Board board)

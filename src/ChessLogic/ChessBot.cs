@@ -55,7 +55,7 @@ public sealed class ChessBot
                     foreach (Move move in moves)
                     {
                         Visit();
-                        bool intendedClaim = game.CanClaimDraw(move);
+                        bool intendedClaim = game.CouldClaimAfterMove && game.CanClaimDraw(move);
                         int value = Explore(move, depth - 1, -Mate, -score, 1);
                         if (intendedClaim && value < 0) value = 0;
                         if (value > score)
@@ -77,7 +77,7 @@ public sealed class ChessBot
 
         private int Explore(Move move, int depth, int alpha, int beta, int ply)
         {
-            game.ApplyMove(move);
+            game.ApplySearchMove(move);
             // The opponent's best score is the negative of ours.
             try { return -Negamax(depth, alpha, beta, ply); }
             finally { game.Undo(); }
@@ -96,7 +96,7 @@ public sealed class ChessBot
             foreach (Move move in OrderedMoves())
             {
                 // Claiming is an alternative to playing the intended move.
-                if (game.CanClaimDraw(move)) best = Math.Max(best, 0);
+                if (game.CouldClaimAfterMove && game.CanClaimDraw(move)) best = Math.Max(best, 0);
                 alpha = Math.Max(alpha, best);
                 // This branch cannot improve the opponent's existing choice.
                 if (alpha >= beta) break;
@@ -109,7 +109,7 @@ public sealed class ChessBot
         }
 
         private Move[] OrderedMoves() => game.AllLegalMoves(game.CurrentPlayer)
-            .OrderByDescending(move => (move is PawnPromotion promotion ? Value(promotion.newType) : 0) +
+            .OrderByDescending(move => (move is DropMove drop ? Value(drop.PieceType) / 50 : move is PawnPromotion promotion ? Value(promotion.newType) : 0) +
                 (move.Type == MoveType.EnPassant ? 100 : game.Board[move.To] is Piece victim
                     ? 10 * Value(victim.Type) - Value(game.Board.GetPiece(move.From).Type) : 0)).ToArray();
 
@@ -145,6 +145,9 @@ public sealed class ChessBot
             };
             score += (piece.Colour == game.CurrentPlayer ? 1 : -1) * (Value(piece.Type) + bonus);
         }
+        foreach (Player player in new[] { Player.White, Player.Black })
+            foreach (PieceType type in Enum.GetValues<PieceType>())
+                score += (player == game.CurrentPlayer ? 1 : -1) * game.Board.PocketCount(player, type) * Value(type) * 9 / 10;
         return score;
     }
 }

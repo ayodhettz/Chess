@@ -95,7 +95,7 @@ public partial class MainWindow
         else if (decision.Move != null) BotStatusText.Text = $"Suggestion: {San.Format(gameState, decision.Move)}";
         if (decision.Move is Move move)
         {
-            highlights[move.From.Row, move.From.Column].Fill = new SolidColorBrush(Color.FromArgb(155, 244, 199, 100));
+            if (move is not DropMove) highlights[move.From.Row, move.From.Column].Fill = new SolidColorBrush(Color.FromArgb(155, 244, 199, 100));
             highlights[move.To.Row, move.To.Column].Fill = new SolidColorBrush(Color.FromArgb(155, 244, 199, 100));
         }
     }

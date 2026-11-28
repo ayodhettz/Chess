@@ -16,6 +16,14 @@ namespace ChessLogic
                 }
             }
 
+            if (board.Variant == GameVariant.Crazyhouse)
+            {
+                key.Append("|crazyhouse|");
+                foreach (Player owner in new[] { Player.White, Player.Black })
+                    foreach (PieceType type in Enum.GetValues<PieceType>()) key.Append(board.PocketCount(owner, type)).Append(',');
+                foreach (Position pos in board.AllPositions().Where(pos => board.GetPiece(pos).IsPromoted))
+                    key.Append('~').Append(pos.Row).Append(pos.Column);
+            }
             key.Append('|').Append(player);
             AppendCastlingRights(key, board, Player.White, 7);
             AppendCastlingRights(key, board, Player.Black, 0);

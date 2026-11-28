@@ -38,6 +38,7 @@ namespace ChessLogic
 
             Piece promotedPiece = CreatePromotedPiece(pawn.Colour);
             promotedPiece.HasMoved = true;
+            promotedPiece.IsPromoted = board.Variant == GameVariant.Crazyhouse;
             board[To] = promotedPiece;
         }
     }
