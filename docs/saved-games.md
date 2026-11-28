@@ -1,5 +1,8 @@
 # Complete-game save files
 
+These file/history controls apply to offline Windows games. Browser and Windows
+online matches do not support local game replacement or undo.
+
 Use **File → Save game…** to write a `.chess.json` file, and **File → Load game…** to resume it.
 Saving includes the starting FEN, played actions, game result, repetition state, and the entire
 remaining redo branch. A successful load replaces the current game and clears UI selection.

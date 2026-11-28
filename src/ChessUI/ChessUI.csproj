@@ -52,4 +52,5 @@
     <Resource Include="Assets\RookW.png" />
   </ItemGroup>
 
+  <ItemGroup><ProjectReference Include="../Chess.Client/Chess.Client.csproj" /></ItemGroup>
 </Project>

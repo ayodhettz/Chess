@@ -6,6 +6,7 @@ namespace ChessUI;
 
 public partial class MainWindow
 {
+    private readonly BotDifficulty botDifficulty;
     private bool sessionStarted;
     private bool botPaused;
     private Task botTurnTask = Task.CompletedTask;
@@ -57,7 +58,7 @@ public partial class MainWindow
         UpdateStatus();
         try
         {
-            BotDecision decision = await new ChessBot().ChooseMoveAsync(original, cancellation.Token);
+            BotDecision decision = await new ChessBot().ChooseMoveAsync(original, suggestOnly ? BotDifficulty.Medium : botDifficulty, cancellation.Token);
             // Cancelled or replaced games must never receive an old result.
             if (windowClosed || cancellation.IsCancellationRequested || gameState != original) return;
             if (suggestOnly) ShowSuggestion(decision);
