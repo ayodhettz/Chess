@@ -98,3 +98,30 @@ test('checkmate reaches both browsers and disables further play',async({browser,
  await expect(white.locator('[data-square=e2]')).toHaveAttribute('aria-disabled','true');
  await a.close();await b.close();
 });
+for(const seat of ['white','black']) test(`computer plays automatically opposite a ${seat} human`,async({page})=>{
+ await page.goto('/');await page.locator('input[name=mode][value=computer]').check();await page.locator(`input[name=seat][value=${seat}]`).check();
+ await page.getByRole('button',{name:'Play computer',exact:true}).click();
+ await expect(page.locator('#opponent-label')).toHaveText('Computer · custom engine');await expect(page.locator('#invitation-panel')).toBeHidden();
+ if(seat==='white') await move(page,'e2','e4');
+ await expect(page.locator('#game-status')).toHaveText('Your move.',{timeout:15000});
+ await expect(page.locator('#moves tr')).toHaveCount(1);
+ await page.reload();await expect(page.locator('#game-status')).toHaveText('Your move.');
+ await page.getByRole('button',{name:'Resign',exact:true}).click();await page.locator('#confirm-yes').click();await expect(page.locator('#turn')).toContainText('wins');
+});
+
+test('random matchmaking pairs two browsers and can be cancelled',async({browser,baseURL})=>{
+ const a=await browser.newContext(), b=await browser.newContext();
+ try {
+  const first=await a.newPage(),second=await b.newPage();
+  await first.goto(baseURL);await second.goto(baseURL);
+  await first.locator('#find-match').click();await expect(first.locator('#search-status')).toBeVisible();
+  await first.locator('#cancel-search').click();await expect(first.locator('#find-match')).toBeEnabled();
+  await first.locator('#find-match').click();await expect(first.locator('#search-status')).toBeVisible();
+  await second.locator('#find-match').click();
+  await expect(first.locator('#game')).toBeVisible();await expect(second.locator('#game')).toBeVisible();
+  expect(await first.locator('#room-label').textContent()).toEqual(await second.locator('#room-label').textContent());
+  const firstSeat=await first.evaluate(()=>JSON.parse(sessionStorage.getItem('chess.online.v2')).ticket.seat);
+  const white=firstSeat==='white'?first:second,black=firstSeat==='white'?second:first;
+  await move(white,'e2','e4');await expect(black.locator('#moves')).toContainText('e4');
+ } finally {await a.close();await b.close();}
+});

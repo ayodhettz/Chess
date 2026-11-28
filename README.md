@@ -1,7 +1,8 @@
 # Chess
 
-A Windows chess application built with C#, .NET 10 LTS, and WPF. Play against a
-custom-built bot or share the board in local two-player mode. The Tournament UI
+A chess project with a Windows WPF app, a browser client, and a shared C#/.NET 10
+server. Play against a custom-built bot, share a local board on Windows, or play
+online with a friend across Windows and browser clients. The Tournament UI
 uses a charcoal gradient, restrained brass accents, and a traditional move scoresheet.
 
 | Start a game | Play against the bot |
@@ -10,11 +11,21 @@ uses a charcoal gradient, restrained brass accents, and a traditional move score
 
 The original foundation follows [OttoBotCode's chess tutorial](https://www.youtube.com/@OttoBotCode).
 
+## Feature availability
+
+Web and Windows support computer games with Easy, Medium, and Hard search budgets,
+private online rooms, and cancellable random matchmaking. Public deployment must
+update both frontend and backend before new features are available to visitors.
+New Figma explorations remain design drafts, not the implemented interface.
+
 ## Playing
 
 Choose **Computer** or **Local two-player** on the start screen. In a computer game,
 choose White or Black and select **Take White & play** or **Take Black & play**.
 The board faces your side, and the bot moves automatically on its turns.
+
+Choose **Play online** to create or join a private room with a Windows or browser
+opponent. [Windows online controls and recovery](docs/windows-online.md).
 
 - Click a piece, then a highlighted destination. Promotion offers all four choices.
 - **Suggest move** highlights a recommendation without playing it.
@@ -37,8 +48,8 @@ pruning, then scores material and piece placement. The current baseline searches
 to three plies within a 4,000-visit budget, using the last completed iteration.
 It handles promotions, draw claims, and responses to draw offers.
 
-This is a starting engine with no difficulty selector or strength rating; it can miss
-tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
+Main still has the fixed baseline search and no strength rating; difficulty selection
+is pending in PR #37 above. The engine can miss tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 
 ## Build and run
 
@@ -62,7 +73,7 @@ notices, so the interface does not depend on installing those fonts separately.
 
 ## Online multiplayer development
 
-The [browser client](docs/browser-play.md) now supports private online games with
+The [browser client](docs/browser-play.md) supports the custom computer opponent and private online games with
 invitation links, reconnect/resume, promotions, draw actions, and resignation.
 It uses the same custom C# rules as the desktop app. Run the server, open its URL,
 and share a room invitation with someone who can reach that server.
@@ -73,8 +84,8 @@ dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.
 ```
 
 Open **http://127.0.0.1:5080** locally. The published Linux server archive includes
-all browser assets; players need only a browser. Public hosting and the Windows
-online UI are still future milestones. Localhost links work only on your computer.
+all browser assets; players need only a browser. Windows players can use **Play
+online** to join the same rooms. Localhost links work only on your computer.
 See the [server contract](docs/multiplayer-server.md) and [multiplayer plan](docs/online-multiplayer-plan.md).
 
 CI validates desktop/server tests, browser recovery logic, and real two-browser games.
@@ -135,5 +146,16 @@ The `Windows build and tests` check is required before merging into `main`.
 
 ## Public hosting
 
-A [free Render deployment guide](docs/public-hosting.md) includes the Docker image,
-Blueprint setup, HTTPS-origin configuration, and free-tier room-reset behavior.
+
+The [public hosting guide](docs/public-hosting.md) explains the current Vercel +
+Cloudflare Tunnel + PC setup and optional Render Free Docker deployment.
+Render requested a payment card on the owner's account, so it is not the current
+backend. Hosting files are already on main; there is no hosting PR prerequisite.
+The public web game requires its backend to remain online.
+
+Choose Easy (1 ply / 500 nodes), Medium (3 plies / 4,000 nodes), or Hard (5 plies / 30,000 nodes) before starting a computer game in Windows or the browser. Medium retains the original settings. These are search limits, not Elo ratings; the bot uses the last fully completed depth within its node budget. Suggestions use Medium. The web bot still runs on the chess server.
+
+### Find a match
+
+Web and Windows online setup offer **Find a match** as well as private room invitations. Two waiting connections are paired in arrival order with random colours. Search is cancellable; keep the page/window open. Disconnecting removes a waiting entry, and unrenewed entries expire after 30 seconds. If pairing wins a cancellation race, the assigned game opens so its seat is not lost. Matched games use the same private seat credentials, reconnect, draw and resignation rules as private rooms. There are no ratings or skill-based matching; two people must be searching on the same server. The queue and rooms are in memory and disappear on server restart.
+

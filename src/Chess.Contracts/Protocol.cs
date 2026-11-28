@@ -15,7 +15,7 @@ public sealed record DrawAvailability(Seat? OfferedBy, bool CanOffer, bool CanCl
 public sealed record GameOutcome(Seat? Winner, string Reason, Seat? ResignedBy = null);
 public sealed record RoomSnapshot(int ProtocolVersion, string Code, long Revision, RoomStatus Status,
     bool WhiteConnected, bool BlackConnected, Seat Turn, string Fen, string[] Moves,
-    MoveIntent[] LegalMoves, GameOutcome? Result, string? ClosedReason, DateTimeOffset ExpiresAt, DrawAvailability Draw);
+    MoveIntent[] LegalMoves, GameOutcome? Result, string? ClosedReason, DateTimeOffset ExpiresAt, DrawAvailability Draw, Seat? ComputerSeat = null);
 public sealed record SeatTicket(string Code, Seat Seat, string Credential, RoomSnapshot State);
 
 public static class OnlineProtocol

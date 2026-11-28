@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS web
+FROM node:26-bookworm-slim AS web
 WORKDIR /source
 COPY src/Chess.Web/package*.json src/Chess.Web/
 RUN npm ci --prefix src/Chess.Web --ignore-scripts --no-audit --no-fund
