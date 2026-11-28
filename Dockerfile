@@ -6,7 +6,7 @@ COPY src/Chess.Web src/Chess.Web
 COPY src/ChessUI/Assets src/ChessUI/Assets
 RUN npm run build --prefix src/Chess.Web
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.404 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100 AS build
 WORKDIR /source
 COPY global.json ./
 COPY src/ChessLogic src/ChessLogic
