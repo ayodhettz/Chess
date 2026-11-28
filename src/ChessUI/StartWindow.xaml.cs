@@ -23,6 +23,7 @@ public partial class StartWindow : Window
     {
         if (ColourPanel == null) return;
         ColourPanel.Visibility = BotModeRadio.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        if (DifficultyPanel != null) DifficultyPanel.Visibility = ColourPanel.Visibility;
         UpdateStartLabel();
     }
 
@@ -49,7 +50,7 @@ public partial class StartWindow : Window
 
     private void OpenMatch(GameState? game)
     {
-        MainWindow window = new(SelectedHumanPlayer, game);
+        MainWindow window = new(SelectedHumanPlayer, game, EasyDifficulty.IsChecked == true ? BotDifficulty.Easy : HardDifficulty.IsChecked == true ? BotDifficulty.Hard : BotDifficulty.Medium);
         Application.Current.MainWindow = window;
         window.Show();
         Close();

@@ -8,7 +8,7 @@ namespace Chess.Server;
 
 public sealed record RoomUpdate(RoomSnapshot State, string[] Recipients);
 public sealed record RoomLease(SeatTicket Ticket, RoomUpdate Update);
-public sealed record ComputerWork(string Code, long Revision, GameState Position);
+public sealed record ComputerWork(string Code, long Revision, GameState Position, BotDifficulty Difficulty = BotDifficulty.Medium);
 public sealed record CommandExecution(CommandResult Result, RoomUpdate? Update);
 
 public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> configuredLimits)
@@ -28,17 +28,18 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         }
     }
 
-    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false)
+    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false, BotDifficulty difficulty = BotDifficulty.Medium)
     {
         lock (gate)
         {
+            _ = BotSearchLimits.For(difficulty);
             Connection connection = Unseated(connectionId);
             if (!Enum.IsDefined(preferredSeat)) throw Error("invalid_seat", "Choose White or Black.");
             if (rooms.Count >= limits.MaxRooms) throw Error("capacity", "The server is at room capacity.");
             string code;
             do { code = string.Concat(Enumerable.Range(0, 8).Select(_ => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[RandomNumberGenerator.GetInt32(32)])); }
             while (rooms.ContainsKey(code));
-            Room room = new(code, clock.GetUtcNow());
+            Room room = new(code, clock.GetUtcNow()) { Difficulty = difficulty };
             if (computer)
             {
                 room.ComputerSeat = preferredSeat == Seat.White ? Seat.Black : Seat.White;
@@ -152,7 +153,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
                 if (room.ComputerBusy || room.ComputerSeat != ToSeat(room.Game.CurrentPlayer) || Expired(room) ||
                     Status(room) != RoomStatus.Active || !Connected(room.White) || !Connected(room.Black)) continue;
                 room.ComputerBusy = true;
-                work.Add(new(room.Code, room.Revision, room.Game.CopyForAnalysis()));
+                work.Add(new(room.Code, room.Revision, room.Game.CopyForAnalysis(), room.Difficulty));
             }
             return work.ToArray();
         }
@@ -336,6 +337,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         public string? ClosedReason { get; set; }
         public Seat? ComputerSeat { get; set; }
         public bool ComputerBusy { get; set; }
+        public BotDifficulty Difficulty { get; init; }
     }
     private sealed class PlayerSeat(byte[] digest)
     {

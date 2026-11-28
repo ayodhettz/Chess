@@ -147,8 +147,10 @@ The `Windows build and tests` check is required before merging into `main`.
 
 ## Public hosting
 
+
 The [public hosting guide](docs/public-hosting.md) explains the current Vercel +
 Cloudflare Tunnel + PC setup and optional Render Free Docker deployment.
 Render requested a payment card on the owner's account, so it is not the current
 backend. Hosting files are already on main; there is no hosting PR prerequisite.
 The public web game requires its backend to remain online.
+
