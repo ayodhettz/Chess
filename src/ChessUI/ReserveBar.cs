@@ -18,7 +18,7 @@ public sealed class ReserveBar : WrapPanel
             TextBlock count = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 0, 0) };
             StackPanel content = new() { Orientation = Orientation.Horizontal };
             content.Children.Add(image); content.Children.Add(count);
-            Button button = new() { Content = content, MinWidth = 48, MinHeight = 44, Padding = new Thickness(4), Margin = new Thickness(0, 0, 6, 6), IsEnabled = false };
+            Button button = new() { Content = content, MinWidth = 44, MinHeight = 44, Padding = new Thickness(4), Margin = new Thickness(0, 0, 3, 6), IsEnabled = false };
             button.SetResourceReference(StyleProperty, "ButtonStyle");
             button.Click += (_, _) => select?.Invoke(type);
             entries.Add(type, (button, image, count)); Children.Add(button);
