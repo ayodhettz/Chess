@@ -42,7 +42,7 @@
         <div class="player"><span>You</span><span id="your-side" class="muted"></span></div>
       </div>
       <aside class="scoresheet">
-        <div><h1 id="turn" tabindex="-1">Waiting for a player</h1><p id="game-status" class="muted" role="status" aria-live="polite"></p></div>
+        <div id="result-banner" class="result-banner"><h1 id="turn" tabindex="-1">Waiting for a player</h1><p id="game-status" class="muted" role="status" aria-live="polite"></p></div>
         <section id="invitation-panel" class="invite" aria-label="Invitation"><div><span class="muted">Room</span> <strong id="room-label"></strong><button id="copy-invite" class="text-button">Copy invitation</button></div><label for="invite-link" class="sr-only">Invitation link</label><input id="invite-link" readonly spellcheck="false" aria-describedby="invite-help"><p id="invite-help" class="small muted">Send this link to your opponent. It does not include your private seat credential.</p></section>
         <div class="moves-header"><h2>Moves</h2><span class="small muted">White / Black</span></div>
         <div id="moves-scroll" class="moves-scroll"><table aria-label="Move history"><thead class="sr-only"><tr><th>Move</th><th>White</th><th>Black</th></tr></thead><tbody id="moves"></tbody></table></div>

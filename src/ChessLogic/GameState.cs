@@ -312,6 +312,10 @@ namespace ChessLogic
             positionCounts[key] = CurrentPositionRepetitions;
         }
 
+        public Position? CheckedKingSquare => Board.IsInCheck(CurrentPlayer)
+            ? Board.AllPositions().FirstOrDefault(square => Board[square] is { Type: PieceType.King } king && king.Colour == CurrentPlayer)
+            : null;
+
         private void CheckForGameEnd()
         {
             if (!AllLegalMoves(CurrentPlayer).Any())

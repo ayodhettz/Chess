@@ -346,7 +346,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
                 game.Result.ResignedBy is Player resigned ? ToSeat(resigned) : null),
             room.ClosedReason, Expiry(room), new(game.DrawOfferedBy is Player offer ? ToSeat(offer) : null,
                 active && connected && game.CanOfferDraw, active && game.CanClaimDraw(),
-                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []), room.ComputerSeat);
+                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []), room.ComputerSeat, game.CheckedKingSquare is Position checkedKing ? Name(checkedKing) : null);
     }
 
     private static MoveIntent Intent(Move move) => new(Name(move.From), Name(move.To),

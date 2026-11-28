@@ -125,3 +125,35 @@ test('random matchmaking pairs two browsers and can be cancelled',async({browser
   await move(white,'e2','e4');await expect(black.locator('#moves')).toContainText('e4');
  } finally {await a.close();await b.close();}
 });
+
+test('check survives selection, clears after an escape, and results respect reduced motion',async({browser,baseURL})=>{
+ const {white,black,a,b}=await pair(browser,baseURL);
+ try {
+  await white.emulateMedia({reducedMotion:'reduce'});
+  await move(white,'e2','e4');await move(black,'f7','f6');await move(white,'d1','h5');
+  await expect(black.locator('[data-square=e8]')).toHaveClass(/in-check/);
+  await expect(black.locator('[data-square=e8]')).toHaveAttribute('aria-label',/in check/);
+  await expect(black.locator('#turn')).toContainText('check');
+  await black.locator('[data-square=g7]').click();
+  await expect(black.locator('[data-square=e8]')).toHaveClass(/in-check/);
+  await black.locator('[data-square=g6]').click();
+  await expect(white.locator('.in-check')).toHaveCount(0);
+  await black.locator('#resign').click();await black.locator('#confirm-yes').click();
+  await expect(white.locator('#result-banner')).toHaveAttribute('data-outcome','win');
+  await expect(black.locator('#result-banner')).toHaveAttribute('data-outcome','loss');
+  expect(await white.locator('#result-banner').evaluate(el=>getComputedStyle(el,'::after').animationName)).toBe('none');
+  await black.reload();await expect(black.locator('#result-banner')).toHaveAttribute('data-outcome','loss');
+  await expect(black.locator('#result-banner')).not.toHaveClass(/result-arrival/);
+ } finally {await a.close();await b.close();}
+});
+test('mate leaves a checked king and displays a single finished-game result',async({browser,baseURL})=>{
+ const {white,black,a,b}=await pair(browser,baseURL);
+ try {
+  for(const [page,from,to] of [[white,'f2','f3'],[black,'e7','e5'],[white,'g2','g4'],[black,'d8','h4']])await move(page,from,to);
+  await expect(white.locator('[data-square=e1]')).toHaveClass(/in-check/);
+  await expect(white.locator('#turn')).toContainText('Checkmate');
+  await expect(white.locator('#result-banner')).toHaveAttribute('data-outcome','loss');
+  await expect(black.locator('#result-banner')).toHaveAttribute('data-outcome','win');
+  await expect(white.locator('#resign')).toBeDisabled();
+ } finally {await a.close();await b.close();}
+});

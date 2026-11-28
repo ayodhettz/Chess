@@ -128,3 +128,10 @@ opposite seat reserved for the custom engine. `RoomSnapshot.computerSeat` is an
 optional additive field in protocol 2; existing friend rooms return null. Other
 players cannot join the computer seat or obtain its credential. Computer rooms use
 the same room limits, expiry, command receipts, result rules, and resume mechanism.
+
+### Check indicator
+
+Protocol 2 snapshots include an optional checkedSquare (for example e8), calculated
+by ChessLogic. It is null when the side to move is not in check, and remains set
+for a checkmated king. Clients keep this presentation independent of selection.
+Older servers omit the field; clients treat that as no reported check.
