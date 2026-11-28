@@ -19,6 +19,8 @@ public partial class OnlineWindow : Window
     private long revision = -1;
     private Seat? orientation;
     private bool closed;
+    private readonly HashSet<string> shownResults = new();
+    private bool observedLiveGame;
 
     public OnlineWindow()
     {
@@ -163,6 +165,10 @@ public partial class OnlineWindow : Window
             bool legal = CanMove && Choices.Any(move => move.From == selected && move.To == name);
             button.BorderThickness = new Thickness(selected == name || legal ? 3 : 0);
             button.BorderBrush = (Brush)FindResource("AccentColor");
+            bool check = state.CheckedSquare == name;
+            button.Background = check ? new SolidColorBrush(Color.FromRgb(190, 72, 62))
+                : (Brush)FindResource((index / 8 + index % 8) % 2 == 0 ? "LightSquareColor" : "DarkSquareColor");
+            AutomationProperties.SetHelpText(button, check ? "King in check" : "");
             AutomationProperties.SetName(button, $"{name}, {(piece == null ? "empty" : $"{piece.Colour} {piece.Type}")}");
         }
         bool ownTurn = state.Turn == ticket.Seat;
@@ -171,8 +177,24 @@ public partial class OnlineWindow : Window
         Turn.Text = state.Status == RoomStatus.Closed ? "Room closed" : state.Result is GameOutcome result
             ? $"{(result.Winner == null ? "Draw" : $"{result.Winner} wins")} · {result.Reason}"
             : state.Status == RoomStatus.Waiting ? "Waiting for a player" : $"{state.Turn} to move";
+        if (state.Result == null)
+        {
+            OutcomePanel.BorderBrush = Brushes.Transparent;
+            observedLiveGame = true;
+            if (state.CheckedSquare != null) Turn.Text += " — check";
+        }
+        else
+        {
+            string resultKey = $"{state.Code}:{state.Result.Winner}:{state.Result.Reason}";
+            if (shownResults.Add(resultKey))
+                ResultMotion.Show(OutcomePanel, state.Result.Winner == ticket.Seat, state.Result.Winner == null, observedLiveGame);
+        }
         ConnectionStatus.Text = session!.Ready ? state.Status == RoomStatus.Waiting ? "Share your invitation to begin." : !opponentConnected ? "Waiting for your opponent to reconnect." : ownTurn ? "Your move." : "Your opponent's move."
             : session.Busy ? "Connecting…" : "Offline. Reconnect to resume this seat.";
+        if (state.Result != null)
+            ConnectionStatus.Text = state.Result.Winner == null ? "Game over · draw."
+                : state.Result.Winner == ticket.Seat ? "Game over · you win." : "Game over · you lose.";
+        else if (state.Status == RoomStatus.Closed) ConnectionStatus.Text = "Game ended. Start a new game.";
         RoomLabel.Text = $"Room {state.Code}";
         StringBuilder history = new();
         for (int i = 0; i < state.Moves.Length; i += 2) history.AppendLine($"{i / 2 + 1,3}. {state.Moves[i],-12}{(i + 1 < state.Moves.Length ? state.Moves[i + 1] : "")}");

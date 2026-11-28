@@ -52,6 +52,7 @@
                             <UniformGrid x:Name="RankLabels" Rows="8" Columns="1"/>
                             <Grid x:Name="BoardGrid" Grid.Column="1" Width="600" Height="600" MouseDown="BoardGrid_MouseDown">
                                 <UniformGrid x:Name="SquareGrid" Rows="8" Columns="8"/>
+                                <UniformGrid x:Name="CheckGrid" Rows="8" Columns="8" IsHitTestVisible="False"/>
                                 <UniformGrid x:Name="HighlightGrid" Rows="8" Columns="8" IsHitTestVisible="False"/>
                                 <UniformGrid x:Name="PieceGrid" Rows="8" Columns="8" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 <ContentControl x:Name="MenuContainer"/>

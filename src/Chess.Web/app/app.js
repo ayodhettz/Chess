@@ -1,5 +1,6 @@
 import { GameSession, invitation, normalizeCode, parseFen, squares, outcome, errorCode } from './session.js';
 const $ = id => document.getElementById(id);
+function updateText(id, value) { if ($(id).textContent !== value) $(id).textContent = value; }
 const names = {p:'Pawn',r:'Rook',n:'Knight',b:'Bishop',q:'Queen',k:'King'};
 const initial = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const title = value => value[0].toUpperCase() + value.slice(1);
@@ -9,6 +10,7 @@ const picture = piece => {
   img.alt = ''; img.draggable = false; return img;
 };
 let selected = null, orientation = null, revision = -1, inGame = false;
+const observedGames = new Set(), shownResults = new Set();
 let storage;
 try { storage = window.sessionStorage; } catch { storage = {getItem:()=>null,setItem:()=>{throw Error();},removeItem:()=>{}}; }
 const hub = new signalR.HubConnectionBuilder().withUrl('/hubs/game')
@@ -134,10 +136,11 @@ function renderBoard() {
   for (const button of $('board').querySelectorAll('button')) {
     const square = button.dataset.square, piece = board.get(square);
     button.className = `square ${(square.charCodeAt(0)-97+Number(square[1]))%2 ? 'light':'dark'}`;
+    button.classList.toggle('in-check',session.state.checkedSquare === square);
     button.classList.toggle('selected',selected === square);
     button.classList.toggle('legal',canSelect() && moves().some(m=>m.from===selected && m.to===square));
     button.setAttribute('aria-selected',String(selected === square)); button.setAttribute('aria-disabled',String(!canSelect()));
-    button.setAttribute('aria-label',`${square}, ${piece ? `${piece===piece.toUpperCase()?'white':'black'} ${names[piece.toLowerCase()].toLowerCase()}`:'empty'}`);
+    button.setAttribute('aria-label',`${square}, ${piece ? `${piece===piece.toUpperCase()?'white':'black'} ${names[piece.toLowerCase()].toLowerCase()}`:'empty'}${session.state.checkedSquare === square ? ', in check' : ''}`);
     button.replaceChildren(...(piece ? [picture(piece)] : []));
   }
 }
@@ -153,8 +156,19 @@ function render() {
   if (state.revision !== revision) { selected = null; revision = state.revision; }
   const own = session.ticket.seat, other = own === 'white' ? 'black':'white';
   const ownTurn = state.turn === own, live = active();
-  $('turn').textContent = outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move`);
-  $('game-status').textContent = state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.';
+  const banner = $('result-banner');
+  if (!state.result) {
+    observedGames.add(state.code); banner.dataset.outcome = ''; banner.classList.remove('result-arrival');
+  } else {
+    const key = state.code + ':' + state.result.winner + ':' + state.result.reason;
+    banner.dataset.outcome = state.result.winner == null ? 'draw' : state.result.winner === own ? 'win' : 'loss';
+    if (!shownResults.has(key)) {
+      shownResults.add(key);
+      banner.classList.toggle('result-arrival', observedGames.has(state.code));
+    }
+  }
+  updateText('turn', outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move${state.checkedSquare ? ' — check' : ''}`));
+  updateText('game-status', state.result ? (state.result.winner == null ? 'Game over · draw.' : state.result.winner === own ? 'Game over · you win.' : 'Game over · you lose.') : state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.');
   $('opponent-label').textContent = state.computerSeat ? 'Computer · custom engine' : `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
   $('match-label').textContent = state.computerSeat ? 'Computer game' : 'Online game';
   $('invitation-panel').hidden = !!state.computerSeat;

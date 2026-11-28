@@ -47,3 +47,17 @@ Move generation is checked against initial-position counts of 20, 400, and 8,902
 
 The tests use an STA dispatcher for WPF and do not require mouse or keyboard interaction.
 Pull requests and pushes to main run the suite through GitHub Actions.
+
+## Check and game-over feedback
+
+A checked king has a persistent red square tint, separate from legal-move highlights,
+and the turn label says check. The tint follows board orientation and remains on a
+checkmated king; escaping check, undoing, or replacing a position updates it. Online
+clients use the server-reported checkedSquare rather than browser chess logic.
+
+Finished games retain their result and reason. A win has a brief brass arrival; a
+loss has a subdued red settle. Draws stay neutral. Browser feedback plays once for a
+live finish and does not replay on reload; Windows online recovery behaves likewise.
+Browser reduced-motion preferences and Windows animation settings suppress nonessential
+motion. Controls are never delayed by the animation. Local two-player games name the
+winning colour; computer and online effects use the human player’s perspective.

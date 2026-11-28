@@ -23,6 +23,7 @@ namespace ChessUI
     {
 
         private readonly Image[,] pieceImages = new Image[8, 8];
+        private readonly Rectangle[,] checkSquares = new Rectangle[8, 8];
         private readonly Rectangle[,] highlights = new Rectangle[8, 8];
         private readonly Dictionary<Position, Move> moveCache = new Dictionary<Position, Move>();
 
@@ -30,6 +31,7 @@ namespace ChessUI
         private Position? selectedPosition;
         private CancellationTokenSource? botCancellation;
         private bool windowClosed;
+        private bool observedPlayablePosition;
         private readonly Player? humanPlayer;
         public MainWindow() : this(null) { }
 
@@ -66,6 +68,9 @@ namespace ChessUI
                     pieceImages[square.Row, square.Column] = pieceImage;
                     PieceGrid.Children.Add(pieceImage);
 
+                    Rectangle check = new();
+                    checkSquares[square.Row, square.Column] = check;
+                    CheckGrid.Children.Add(check);
                     Rectangle highlight = new Rectangle();
                     highlights[square.Row, square.Column] = highlight;
                     HighlightGrid.Children.Add(highlight);
@@ -242,7 +247,8 @@ namespace ChessUI
 
         private void ShowGameOverMenu()
         {
-            GameOverMenu menu = new GameOverMenu(gameState);
+            GameOverMenu menu = new GameOverMenu(gameState, humanPlayer, observedPlayablePosition);
+            observedPlayablePosition = false;
             MenuContainer.Content = menu;
             UpdateStatus();
 
@@ -385,6 +391,12 @@ namespace ChessUI
 
         private void UpdateStatus()
         {
+            if (!gameState.IsGameOver()) observedPlayablePosition = true;
+            Position? checkedKing = gameState.CheckedKingSquare;
+            for (int row = 0; row < 8; row++)
+                for (int col = 0; col < 8; col++)
+                    checkSquares[row, col].Fill = checkedKing == new Position(row, col)
+                        ? new SolidColorBrush(Color.FromArgb(190, 190, 48, 40)) : Brushes.Transparent;
             MatchTitleText.Text = humanPlayer == null ? "Local two-player" : "You vs Computer";
             OpponentText.Text = humanPlayer == null ? "Black" : "Computer";
             HumanText.Text = humanPlayer == null ? "White" : "You";
