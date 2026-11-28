@@ -65,7 +65,7 @@ receives its credential. Credentials are 256-bit random values, hashed in memory
 they must never enter invitation URLs, logs, or another player's snapshot.
 
 Snapshots contain protocol version, code, revision, status, each player's connected
-flag, turn, FEN, ordered SAN moves from the standard start, legal move intents, result,
+flag, turn, FEN, ordered SAN moves from the selected variant's start, legal move intents, result,
 optional closure reason, expiry time, and optional `computerSeat` for bot rooms. `draw` contains `offeredBy`, current-side
 `canOffer` / `canClaim` flags, and legal `claimMoves` for intended claims. `Result.reason`
 uses ChessLogic names, such as `Checkmate`. The winner is `null` for a draw; resignation
