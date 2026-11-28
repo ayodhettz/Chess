@@ -15,7 +15,7 @@ COPY src/Chess.Server src/Chess.Server
 COPY --from=web /source/src/Chess.Server/wwwroot src/Chess.Server/wwwroot
 RUN dotnet publish src/Chess.Server/Chess.Server.csproj --configuration Release --output /app --self-contained false -p:BuildBrowserAssets=false -p:TreatWarningsAsErrors=true
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.15 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0 AS runtime
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \
     ASPNETCORE_ENVIRONMENT=Production \
