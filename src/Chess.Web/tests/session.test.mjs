@@ -18,16 +18,30 @@ test('FEN and orientation retain logical square names',()=>{
  assert.equal(parseFen(state().fen).get('a1'),'K');assert.equal(squares('black')[0],'h1');
  assert.throws(()=>parseFen('8/8'));assert.throws(()=>parseFen('9/8/8/8/8/8/8/8'));
 });
+
+test('Crazyhouse FEN retains promoted pieces and ignores the pocket suffix for rendering',()=>{
+ const board=parseFen('4k3/8/8/8/8/3Q~4/8/4K3[PNq] w - - 0 1');
+ assert.equal(board.get('d3'),'Q');assert.equal(board.size,3);
+});
+
+test('Crazyhouse selection reaches creation, computer play, and matchmaking',async()=>{
+ const {session,calls}=setup();await session.create('white','crazyhouse');
+ assert.deepEqual(calls.find(c=>c[0]==='CreateVariantRoom'),['CreateVariantRoom','white','crazyhouse']);
+ await session.computer('black','easy','crazyhouse');
+ assert.deepEqual(calls.find(c=>c[0]==='CreateVariantComputerGame'),['CreateVariantComputerGame','black','easy','crazyhouse']);
+ await session.findMatch('crazyhouse');
+ assert.deepEqual(calls.find(c=>c[0]==='FindVariantMatch'),['FindVariantMatch','crazyhouse']);
+});
 test('snapshots ignore another room and older revisions',()=>{
  const {session}=setup({ticket});session.accept(state(3));session.accept(state(2));session.accept({...state(4),code:'ZZZZZZZZ'});assert.equal(session.state.revision,3);
 });
 test('resume on an existing seat uses GetState without rebinding',async()=>{
- const {session,calls}=setup({ticket});await session.resume();assert.equal(session.ready,true);assert.ok(!calls.some(c=>c[0]==='ResumeRoom'));
+ const {session,calls}=setup({ticket});await session.resume();assert.equal(session.ready,true);assert.ok(!calls.some(c=>c[0]==='ResumeGame'));
 });
 test('a replacement connection resumes with the stored private credential',async()=>{
  const {session,hub,calls}=setup({ticket});const invoke=hub.invoke.bind(hub);let unseated=true;
  hub.invoke=async(method,...args)=>{if(method==='GetState'&&unseated){unseated=false;throw Error('not_seated');}return invoke(method,...args);};
- await session.resume();assert.deepEqual(calls.find(c=>c[0]==='ResumeRoom'),['ResumeRoom',ticket.code,ticket.credential]);
+ await session.resume();assert.deepEqual(calls.find(c=>c[0]==='ResumeGame'),['ResumeGame',ticket.code,ticket.credential]);
 });
 test('ambiguous delivery survives reload and retries the identical command',async()=>{
  const {session,hub}=setup({ticket});session.accept(state());session.ready=true;
@@ -50,20 +64,20 @@ test('malformed pending storage is discarded',()=>{
 
 test('difficulty is sent to the server',async()=>{
  const {session,calls}=setup();await session.computer('black','hard');
- assert.deepEqual(calls.find(c=>c[0]==='CreateComputerGame'),['CreateComputerGame','black','hard']);
+ assert.deepEqual(calls.find(c=>c[0]==='CreateVariantComputerGame'),['CreateVariantComputerGame','black','hard','standard']);
 });
 test('matchmaking stores the assigned seat and refreshes it',async()=>{
  const {session,calls}=setup();await session.findMatch();
  assert.equal(session.ready,true);assert.equal(session.searching,false);
- assert.ok(calls.some(c=>c[0]==='FindMatch'));assert.ok(calls.some(c=>c[0]==='GetState'));
+ assert.ok(calls.some(c=>c[0]==='FindVariantMatch'));assert.ok(calls.some(c=>c[0]==='GetState'));
 });
 test('cancel returns a pairing that already won the race',async()=>{
  const {session,hub}=setup();const invoke=hub.invoke.bind(hub);
- hub.invoke=async(method,...args)=>{if(method==='FindMatch'){session.cancelSearch();return null;}return invoke(method,...args);};
+ hub.invoke=async(method,...args)=>{if(method==='FindVariantMatch'){session.cancelSearch();return null;}return invoke(method,...args);};
  await session.findMatch();assert.equal(session.ready,true);assert.equal(session.ticket.code,ticket.code);
 });
 test('cancelled waiting search leaves no new seat',async()=>{
  const {session,hub}=setup();
- hub.invoke=async method=>{if(method==='FindMatch')session.cancelSearch();return null;};
+ hub.invoke=async method=>{if(method==='FindVariantMatch')session.cancelSearch();return null;};
  await session.findMatch();assert.equal(session.ticket,null);assert.equal(session.ready,false);assert.equal(session.busy,false);
 });

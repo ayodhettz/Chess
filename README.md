@@ -18,6 +18,10 @@ private online rooms, and cancellable random matchmaking. Public deployment must
 update both frontend and backend before new features are available to visitors.
 New Figma explorations remain design drafts, not the implemented interface.
 
+[Crazyhouse](docs/crazyhouse.md) is available in Windows local/computer play and
+cross-platform online games, including browser bots and random matchmaking.
+Choose Crazyhouse under Rules, then select captured pieces from your reserve to drop them.
+
 ## Playing
 
 Choose **Computer** or **Local two-player** on the start screen. In a computer game,
@@ -36,8 +40,8 @@ opponent. [Windows online controls and recovery](docs/windows-online.md).
 - **Open saved game** resumes a complete save from setup. The File menu also
   supports saving/loading games and importing/exporting PGN; **Load FEN** opens the position editor.
 
-Saved chess files use the mode and colour selected in the current UI. Choose those
-settings before loading a match. See [gameplay controls](docs/gameplay.md) for draw
+Saved chess files restore Standard or Crazyhouse rules; the opponent and human colour
+use the current UI settings. See [gameplay controls](docs/gameplay.md) for draw
 claims, offers, resignation, and history behavior.
 
 ## The custom bot
@@ -48,8 +52,9 @@ pruning, then scores material and piece placement. The current baseline searches
 to three plies within a 4,000-visit budget, using the last completed iteration.
 It handles promotions, draw claims, and responses to draw offers.
 
-Main still has the fixed baseline search and no strength rating; difficulty selection
-is pending in PR #37 above. The engine can miss tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
+Easy uses 1 ply / 500 visits, Medium 3 / 4,000, and Hard 5 / 30,000. These are search
+budgets, with no strength rating. The bot also searches Crazyhouse drops and values
+reserve material. It can miss tactics beyond its search horizon. [Read how the bot works](docs/bot.md).
 
 ## Build and run
 

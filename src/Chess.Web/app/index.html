@@ -23,6 +23,7 @@
         <h1 id="setup-title">Your next game.</h1>
         <p class="muted">Play our custom computer, or invite a friend.</p>
         <fieldset><legend>Opponent</legend><div class="choices"><label><input type="radio" name="mode" value="friend" checked><span>Play a friend</span></label><label><input type="radio" name="mode" value="computer"><span>Computer</span></label></div></fieldset>
+        <fieldset id="variant-panel"><legend>Rules</legend><div class="choices"><label><input type="radio" name="variant" value="standard" checked><span>Standard</span></label><label><input type="radio" name="variant" value="crazyhouse"><span>Crazyhouse</span></label></div><p class="small muted variant-help">Crazyhouse: capture pieces, then drop them as your own.</p></fieldset>
         <fieldset><legend>You play</legend><div class="choices"><label><input type="radio" name="seat" value="white" checked><span>White · first move</span></label><label><input type="radio" name="seat" value="black"><span>Black</span></label></div></fieldset>
         <fieldset id="difficulty-panel" hidden><legend>Difficulty</legend><div class="choices"><label><input type="radio" name="difficulty" value="easy"><span>Easy</span></label><label><input type="radio" name="difficulty" value="medium" checked><span>Medium</span></label><label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label></div></fieldset>
         <button id="create-room" class="primary">Create room</button>
@@ -37,8 +38,10 @@
     <section id="game" class="game" aria-label="Online chess game" hidden>
       <div class="board-column">
         <div class="player"><span id="opponent-label">Opponent</span><span id="opponent-side" class="muted"></span></div>
+        <div id="opponent-pocket" class="pocket" aria-label="Opponent reserve" hidden></div>
         <div class="board-wrap"><div id="ranks" class="rank-labels" aria-hidden="true"></div><div id="board" class="board" role="grid" aria-label="Chess board. Use arrow keys to navigate and Enter to select." aria-rowcount="8" aria-colcount="8"></div></div>
         <div id="files" class="file-labels" aria-hidden="true"></div>
+        <div id="your-pocket" class="pocket" aria-label="Your reserve" hidden></div>
         <div class="player"><span>You</span><span id="your-side" class="muted"></span></div>
       </div>
       <aside class="scoresheet">

@@ -44,6 +44,7 @@ async function enter(action) {
   if (session.ticket && !await confirmAction('Start another game?', 'Your previous seat stays reserved, but this tab will replace its saved credential after joining the new room.')) return;
   await run(async () => { await action(); inGame = !!session.state; render(); });
 }
+function selectedVariant() { return document.querySelector('input[name=variant]:checked').value; }
 function computerSelected() { return document.querySelector('input[name=mode]:checked').value === 'computer'; }
 for (const radio of document.querySelectorAll('input[name=mode]')) radio.onchange = () => {
   $('difficulty-panel').hidden = !computerSelected();
@@ -51,9 +52,9 @@ for (const radio of document.querySelectorAll('input[name=mode]')) radio.onchang
 };
 $('create-room').onclick = () => enter(() => {
   const seat = document.querySelector('input[name=seat]:checked').value;
-  return computerSelected() ? session.computer(seat, document.querySelector('input[name=difficulty]:checked').value) : session.create(seat);
+  return computerSelected() ? session.computer(seat, document.querySelector('input[name=difficulty]:checked').value, selectedVariant()) : session.create(seat, selectedVariant());
 });
-$('find-match').onclick = () => enter(() => session.findMatch());
+$('find-match').onclick = () => enter(() => session.findMatch(selectedVariant()));
 $('cancel-search').onclick = () => session.cancelSearch();
 $('join-form').onsubmit = event => { event.preventDefault(); void enter(() => session.join($('room-code').value)); };
 $('resume-game').onclick = () => run(async () => { await session.resume(); inGame = true; });
@@ -107,7 +108,7 @@ async function selectSquare(square) {
     // A dialog may outlive a presence update or an opponent action.
     if (observedRevision !== session.state.revision || !canSelect()) { notice('The game changed. Choose your move again.'); render(); return; }
     await run(() => session.send(claim ? 'claimDraw' : 'move', move));
-  } else { selected = moves().some(move => move.from === square) ? square : null; renderBoard(); }
+  } else { selected = moves().some(move => move.from === square) ? square : null; renderBoard(); renderPockets(); }
 }
 function renderBoard() {
   if (!session.state) return;
@@ -144,10 +145,37 @@ function renderBoard() {
     button.replaceChildren(...(piece ? [picture(piece)] : []));
   }
 }
+const reserveTypes = {pawn:'p',knight:'n',bishop:'b',rook:'r',queen:'q'};
+function renderPockets() {
+  const state = session.state, own = session.ticket.seat;
+  for (const [id, owner] of [['your-pocket',own],['opponent-pocket',own === 'white' ? 'black' : 'white']]) {
+    const panel = $(id); panel.hidden = state.variant !== 'crazyhouse';
+    if (panel.hidden) continue;
+    if (!panel.children.length) {
+      for (const [type, letter] of Object.entries(reserveTypes)) {
+        const button = document.createElement('button'); button.type = 'button'; button.dataset.piece = type;
+        button.append(picture(owner === 'white' ? letter.toUpperCase() : letter), document.createElement('span'));
+        panel.append(button);
+      }
+    }
+    for (const button of panel.children) {
+      const type = button.dataset.piece;
+      button.onclick = () => { if (canSelect() && owner === session.ticket.seat) { selected = selected === '@'+type ? null : '@'+type; renderBoard(); renderPockets(); } };
+      const count = state.pockets?.find(p => p.owner === owner && p.piece === type)?.count ?? 0;
+      const img = button.querySelector('img'), letter = reserveTypes[type];
+      img.src = picture(owner === 'white' ? letter.toUpperCase() : letter).src;
+      button.querySelector('span').textContent = count;
+      button.setAttribute('aria-label',owner === own ? 'Drop '+type+', '+count+' available' : 'Opponent '+type+', '+count+' available');
+      button.setAttribute('aria-pressed',String(selected === '@'+type && owner === own));
+      button.disabled = owner !== own || !canSelect() || !moves().some(m => m.from === '@'+type);
+    }
+  }
+}
 function render() {
   $('setup').hidden = inGame; $('game').hidden = !inGame; $('home').hidden = inGame;
   $('match-label').hidden = !inGame; $('new-game').hidden = !inGame; $('resume-game').hidden = !session.ticket;
   $('find-match').disabled = session.busy;
+  for (const input of document.querySelectorAll('input[name=variant]')) input.disabled = session.busy;
   $('cancel-search').hidden = !session.searching;
   $('search-status').hidden = !session.searching;
   $('create-room').disabled = $('join-room').disabled = $('resume-game').disabled = session.busy;
@@ -170,7 +198,7 @@ function render() {
   updateText('turn', outcome(state) || (state.status === 'waiting' ? 'Waiting for a player' : `${title(state.turn)} to move${state.checkedSquare ? ' — check' : ''}`));
   updateText('game-status', state.result ? (state.result.winner == null ? 'Game over · draw.' : state.result.winner === own ? 'Game over · you win.' : 'Game over · you lose.') : state.status === 'waiting' ? 'Share the invitation to begin.' : state.status !== 'active' ? 'Start a new game whenever you’re ready.' : !state[`${other}Connected`] ? 'Opponent offline · waiting for them to return.' : ownTurn ? 'Your move.' : state.computerSeat ? 'Computer is thinking…' : 'Your opponent’s move.');
   $('opponent-label').textContent = state.computerSeat ? 'Computer · custom engine' : `Opponent · ${state[`${other}Connected`] ? 'online':'offline'}`;
-  $('match-label').textContent = state.computerSeat ? 'Computer game' : 'Online game';
+  $('match-label').textContent = (state.variant === 'crazyhouse' ? 'Crazyhouse · ' : '') + (state.computerSeat ? 'Computer game' : 'Online game');
   $('invitation-panel').hidden = !!state.computerSeat;
   $('opponent-side').textContent = title(other); $('your-side').textContent = title(own);
   $('room-label').textContent = state.code; $('invite-link').value = invitation(location.href,state.code);
@@ -191,7 +219,7 @@ function render() {
     history.append(row);
   }
   if (!session.storageAvailable) notice('Browser storage is unavailable. Keep this tab open; reloading may lose your seat.');
-  renderBoard();
+  renderBoard(); renderPockets();
 }
 const preview = parseFen(initial);
 for (const square of squares('white')) {

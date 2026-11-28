@@ -14,7 +14,7 @@
             <Border Grid.Row="1" Height="1" Background="{StaticResource StrokeColor}" VerticalAlignment="Center"/>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="300" MaxWidth="356"/><ColumnDefinition Width="106"/><ColumnDefinition Width="1.65*"/></Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel VerticalAlignment="Center">
                     <TextBlock Text="New game" FontFamily="{StaticResource HeadingFont}" FontSize="44" Foreground="{StaticResource TextColor}" Margin="0,0,0,28"/>
                     <TextBlock Text="Computer or a friend. Your choice." FontSize="16" Foreground="{StaticResource MutedColor}" Margin="0,0,0,44"/>
                     <TextBlock Text="Opponent" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
@@ -22,6 +22,12 @@
                         <RadioButton x:Name="BotModeRadio" GroupName="Mode" IsChecked="True" Content="Computer" Style="{StaticResource ChoiceStyle}" Checked="Mode_Changed" Margin="0,0,4,0"/>
                         <RadioButton x:Name="LocalModeRadio" GroupName="Mode" Content="Local two-player" Style="{StaticResource ChoiceStyle}" Checked="Mode_Changed" Margin="4,0,0,0"/>
                     </UniformGrid>
+                    <TextBlock Text="Rules" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
+                    <UniformGrid Rows="1" Columns="2" Margin="0,0,0,16">
+                        <RadioButton GroupName="Variant" IsChecked="True" Content="Standard" Style="{StaticResource ChoiceStyle}" Margin="0,0,4,0"/>
+                        <RadioButton x:Name="CrazyhouseRadio" GroupName="Variant" Content="Crazyhouse" Style="{StaticResource ChoiceStyle}" Margin="4,0,0,0"/>
+                    </UniformGrid>
+                    <TextBlock Text="Crazyhouse: capture pieces, then drop them as your own." TextWrapping="Wrap" Foreground="{StaticResource MutedColor}" Margin="0,0,0,16"/>
                     <StackPanel x:Name="ColourPanel">
                         <TextBlock Text="You play" Foreground="{StaticResource MutedColor}" Margin="0,0,0,8"/>
                         <UniformGrid Rows="1" Columns="2" Margin="0,0,0,28">
@@ -41,7 +47,7 @@
                     <Button Content="Play online" Style="{StaticResource ButtonStyle}" Click="Online_Click" Margin="0,12,0,0"/>
                     <Button Content="Open saved game" Style="{StaticResource LinkButtonStyle}" Click="OpenGame_Click" Margin="0,22,0,0"/>
                     <TextBlock x:Name="LoadErrorText" Foreground="{StaticResource AccentColor}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite"/>
-                </StackPanel>
+                </StackPanel></ScrollViewer>
                 <Grid Grid.Column="2" VerticalAlignment="Center">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                     <TextBlock Text="WHITE TO MOVE" Foreground="{StaticResource MutedColor}" FontFamily="{StaticResource MonoFont}" FontSize="12" Margin="26,0,0,12"/>

@@ -96,6 +96,12 @@
                     </ListBox>
                     <ScrollViewer x:Name="ActionsScrollViewer" Grid.Row="2" MaxHeight="330" VerticalAlignment="Bottom" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,14,0,0">
                         <StackPanel>
+<StackPanel x:Name="ReservePanel" Visibility="Collapsed" Margin="0,0,0,16">
+    <TextBlock Text="Opponent reserve" Foreground="{StaticResource MutedColor}" Margin="0,0,0,6"/>
+    <local:ReserveBar x:Name="OpponentReserve"/>
+    <TextBlock Text="Your reserve · select a piece to drop" Foreground="{StaticResource MutedColor}" TextWrapping="Wrap" Margin="0,12,0,6"/>
+    <local:ReserveBar x:Name="OwnReserve"/>
+</StackPanel>
                             <Button x:Name="ResumeBotButton" Content="Resume bot" Click="ResumeBot_Click" Style="{StaticResource PrimaryButtonStyle}" Visibility="Collapsed" Margin="0,0,0,14"/>
                             <UniformGrid Rows="1" Columns="2" Margin="0,0,0,14">
                                 <Button x:Name="UndoButton" Content="Undo" Style="{StaticResource ButtonStyle}" Click="Undo_Click" Margin="0,0,8,0" ToolTip="Undo (Ctrl+Z)"/>

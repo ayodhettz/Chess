@@ -62,11 +62,11 @@ public sealed class OnlineSession : IAsyncDisposable
 
     public string Invitation => Ticket == null ? "" : new Uri(Server, $"/#room={Ticket.Code}").AbsoluteUri;
 
-    public Task CreateAsync(Seat seat) => Execute(async () =>
+    public Task CreateAsync(Seat seat, ChessVariant variant = ChessVariant.Standard) => Execute(async () =>
     {
         await Start();
         if (Ticket != null) throw new InvalidOperationException("This window already owns a seat.");
-        await Enter(await hub.InvokeAsync<SeatTicket>("CreateRoom", seat));
+        await Enter(await hub.InvokeAsync<SeatTicket>("CreateVariantRoom", seat, variant));
     });
 
     public Task JoinAsync(string code) => Execute(async () =>
@@ -74,10 +74,10 @@ public sealed class OnlineSession : IAsyncDisposable
         string normalized = RoomCode(code);
         await Start();
         if (Ticket != null) throw new InvalidOperationException("This window already owns a seat.");
-        await Enter(await hub.InvokeAsync<SeatTicket>("JoinRoom", normalized));
+        await Enter(await hub.InvokeAsync<SeatTicket>("JoinGame", normalized));
     });
 
-    public Task FindMatchAsync() => Execute(async () =>
+    public Task FindMatchAsync(ChessVariant variant = ChessVariant.Standard) => Execute(async () =>
     {
         if (Ticket != null) throw new InvalidOperationException("This window already owns a seat.");
         await Start();
@@ -87,7 +87,7 @@ public sealed class OnlineSession : IAsyncDisposable
             SeatTicket? ticket = null;
             while (Searching && ticket == null)
             {
-                ticket = await hub.InvokeAsync<SeatTicket?>("FindMatch");
+                ticket = await hub.InvokeAsync<SeatTicket?>("FindVariantMatch", variant);
                 if (ticket == null) await Task.Delay(1000);
             }
             ticket ??= await hub.InvokeAsync<SeatTicket?>("CancelMatch");
@@ -114,7 +114,7 @@ public sealed class OnlineSession : IAsyncDisposable
         try { Accept(await hub.InvokeAsync<RoomSnapshot>("GetState")); }
         catch (HubException error) when (Code(error) == "not_seated")
         {
-            SeatTicket resumed = await hub.InvokeAsync<SeatTicket>("ResumeRoom", Ticket.Code, Ticket.Credential);
+            SeatTicket resumed = await hub.InvokeAsync<SeatTicket>("ResumeGame", Ticket.Code, Ticket.Credential);
             Accept(resumed.State);
         }
         Accept(await hub.InvokeAsync<RoomSnapshot>("GetState"));

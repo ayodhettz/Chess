@@ -37,6 +37,22 @@ JSON uses camelCase properties and string enums (`white`, `black`, `queen`, `kni
 | `GetState` | none | current seated room snapshot |
 | `SubmitMove` | `{ expectedRevision, move: { from, to, promotion? } }` | accepted snapshot |
 | `SubmitCommand` | `{ id, expectedRevision, action, move? }` | `CommandResult` receipt and latest snapshot |
+| `CreateVariantRoom` | seat, variant (`standard` / `crazyhouse`) | private `SeatTicket` |
+| `CreateVariantComputerGame` | human seat, difficulty, variant | private `SeatTicket` |
+| `FindVariantMatch` | variant | assigned private ticket or null while waiting |
+| `JoinGame` / `ResumeGame` | same arguments as JoinRoom / ResumeRoom | variant-aware private ticket |
+
+Variant-aware clients use the new methods above. Legacy creation and matching
+methods remain Standard. Legacy JoinRoom/ResumeRoom reject Crazyhouse with
+`unsupported_variant` before binding a seat, allowing old clients to keep playing Standard.
+Invalid variants return `invalid_variant`.
+
+Snapshots add `variant` and `pockets` (`{ owner, piece, count }` entries with nonzero
+counts), plus `checkedSquare` for check feedback. Crazyhouse uses bracket FEN and
+promotion markers as described in [Crazyhouse](crazyhouse.md). A drop intent is
+`{ from: "@knight", to: "f7", drop: "knight" }`, with no promotion. Reserve types
+are pawn, knight, bishop, rook and queen. The server resolves drops against its legal
+move set, consumes the reserve once, and includes them in command retry receipts.
 
 New clients should use `SubmitCommand` for all game actions. Its `id` is a non-empty
 UUID, generated once per intent. Actions are `move`, `offerDraw`, `acceptDraw`,

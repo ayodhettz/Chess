@@ -16,6 +16,30 @@ public class DesktopClientTests : IClassFixture<WebApplicationFactory<Program>>
     private OnlineSession Desktop() => new(factory.Server.BaseAddress, options => options.HttpMessageHandlerFactory = _ => factory.Server.CreateHandler());
 
     [Fact]
+    public async Task DesktopAndBrowserWireCanCaptureDropAndRecoverCrazyhouse()
+    {
+        await using OnlineSession desktop = Desktop();
+        await desktop.CreateAsync(Seat.White, ChessVariant.Crazyhouse);
+        await using HubConnection peer = Peer(); await peer.StartAsync(TestContext.Current.CancellationToken);
+        await Assert.ThrowsAsync<HubException>(() => peer.InvokeAsync<SeatTicket>("JoinRoom", desktop.Ticket!.Code, TestContext.Current.CancellationToken));
+        await peer.InvokeAsync<SeatTicket>("JoinGame", desktop.Ticket!.Code, TestContext.Current.CancellationToken);
+        await desktop.ResumeAsync();
+        await desktop.SendAsync(OnlineAction.Move, new("e2", "e4"));
+        RoomSnapshot state = await peer.InvokeAsync<RoomSnapshot>("GetState", TestContext.Current.CancellationToken);
+        await peer.InvokeAsync<RoomSnapshot>("SubmitMove", new MoveRequest(state.Revision, new("d7", "d5")), TestContext.Current.CancellationToken);
+        await desktop.ResumeAsync(); await desktop.SendAsync(OnlineAction.Move, new("e4", "d5"));
+        state = await peer.InvokeAsync<RoomSnapshot>("GetState", TestContext.Current.CancellationToken);
+        await peer.InvokeAsync<RoomSnapshot>("SubmitMove", new MoveRequest(state.Revision, new("d8", "d5")), TestContext.Current.CancellationToken);
+        await desktop.ResumeAsync();
+        await desktop.SendAsync(OnlineAction.Move, new("@pawn", "e4", Drop: ReservePiece.Pawn));
+        state = await peer.InvokeAsync<RoomSnapshot>("GetState", TestContext.Current.CancellationToken);
+        Assert.Equal(ChessVariant.Crazyhouse, state.Variant);
+        Assert.Equal("@e4", state.Moves[^1]);
+        Assert.DoesNotContain(state.Pockets!, piece => piece.Owner == Seat.White);
+        Assert.Contains(new PocketPiece(Seat.Black, ReservePiece.Pawn, 1), state.Pockets!);
+    }
+
+    [Fact]
     public async Task DesktopAndWirePeerShareMovesDrawActionsAndResults()
     {
         await using OnlineSession desktop = Desktop();

@@ -28,10 +28,11 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         }
     }
 
-    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false, BotDifficulty difficulty = BotDifficulty.Medium)
+    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false, BotDifficulty difficulty = BotDifficulty.Medium, ChessVariant variant = ChessVariant.Standard)
     {
         lock (gate)
         {
+            ValidateVariant(variant);
             _ = BotSearchLimits.For(difficulty);
             Connection connection = Unseated(connectionId);
             if (!Enum.IsDefined(preferredSeat)) throw Error("invalid_seat", "Choose White or Black.");
@@ -39,7 +40,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
             string code;
             do { code = string.Concat(Enumerable.Range(0, 8).Select(_ => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[RandomNumberGenerator.GetInt32(32)])); }
             while (rooms.ContainsKey(code));
-            Room room = new(code, clock.GetUtcNow()) { Difficulty = difficulty };
+            Room room = new(code, clock.GetUtcNow(), variant) { Difficulty = difficulty };
             if (computer)
             {
                 room.ComputerSeat = preferredSeat == Seat.White ? Seat.Black : Seat.White;
@@ -52,25 +53,26 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     }
 
     // Queue entries are connection-bound and renewed by each poll.
-    private readonly Dictionary<string, (long Order, DateTimeOffset Seen)> waiting = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (long Order, DateTimeOffset Seen, ChessVariant Variant)> waiting = new(StringComparer.Ordinal);
 
     private long queueOrder;
 
-    public SeatTicket? FindMatch(string connectionId)
+    public SeatTicket? FindMatch(string connectionId, ChessVariant variant = ChessVariant.Standard)
     {
         lock (gate)
         {
+            ValidateVariant(variant);
             Connection connection = CheckConnection(connectionId);
             if (connection.MatchTicket != null) return connection.MatchTicket;
             if (connection.Room != null) throw Error("already_seated", "Leave this connection before finding a match.");
             DateTimeOffset now = clock.GetUtcNow();
             foreach (string id in waiting.Where(entry => now - entry.Value.Seen > TimeSpan.FromSeconds(30)).Select(entry => entry.Key).ToArray())
                 waiting.Remove(id);
-            string? opponent = waiting.OrderBy(entry => entry.Value.Order).Select(entry => entry.Key).FirstOrDefault(id => id != connectionId);
-            if (opponent == null) { waiting[connectionId] = (waiting.TryGetValue(connectionId, out var queued) ? queued.Order : ++queueOrder, now); return null; }
+            string? opponent = waiting.Where(entry => entry.Value.Variant == variant).OrderBy(entry => entry.Value.Order).Select(entry => entry.Key).FirstOrDefault(id => id != connectionId);
+            if (opponent == null) { waiting[connectionId] = (waiting.TryGetValue(connectionId, out var queued) && queued.Variant == variant ? queued.Order : ++queueOrder, now, variant); return null; }
             // Create and bind both seats under the same lock; no third player can claim one.
             Seat seat = RandomNumberGenerator.GetInt32(2) == 0 ? Seat.White : Seat.Black;
-            RoomLease first = Create(opponent, seat);
+            RoomLease first = Create(opponent, seat, variant: variant);
             Room room = connections[opponent].Room!;
             RoomLease second = Bind(room, seat == Seat.White ? Seat.Black : Seat.White, connectionId, connection, resume: false);
             waiting.Remove(opponent); waiting.Remove(connectionId);
@@ -90,24 +92,28 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         }
     }
 
-    public RoomLease Join(string connectionId, string code)
+    public RoomLease Join(string connectionId, string code, bool supportsCrazyhouse = true)
     {
         lock (gate)
         {
             Connection connection = Unseated(connectionId);
             Room room = Find(code);
+            if (!supportsCrazyhouse && room.Game.Variant == GameVariant.Crazyhouse)
+                throw Error("unsupported_variant", "Update your app to play Crazyhouse.");
             Seat? available = room.White == null ? Seat.White : room.Black == null ? Seat.Black : null;
             if (available == null) throw Error("room_full", "Both player seats are reserved.");
             return Bind(room, available.Value, connectionId, connection, resume: false);
         }
     }
 
-    public RoomLease Resume(string connectionId, string code, string credential)
+    public RoomLease Resume(string connectionId, string code, string credential, bool supportsCrazyhouse = true)
     {
         lock (gate)
         {
             Connection connection = Unseated(connectionId);
             Room room = Find(code);
+            if (!supportsCrazyhouse && room.Game.Variant == GameVariant.Crazyhouse)
+                throw Error("unsupported_variant", "Update your app to play Crazyhouse.");
             byte[] digest = Hash(credential);
             Seat? seat = room.White != null && CryptographicOperations.FixedTimeEquals(room.White.Digest, digest) ? Seat.White :
                 room.Black != null && CryptographicOperations.FixedTimeEquals(room.Black.Digest, digest) ? Seat.Black : null;
@@ -226,7 +232,16 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     private static Move Resolve(GameState game, MoveIntent? intent)
     {
         if (intent == null) throw Error("invalid_move", "A move is required.");
-        Position from = Square(intent.From), to = Square(intent.To);
+        Position to = Square(intent.To);
+        if (intent.Drop is ReservePiece reserve)
+        {
+            if (!Enum.IsDefined(reserve) || intent.Promotion != null || intent.From != "@" + reserve.ToString().ToLowerInvariant())
+                throw Error("invalid_move", "The drop arguments are invalid.");
+            PieceType type = Enum.Parse<PieceType>(reserve.ToString());
+            return game.LegalDrops(type).SingleOrDefault(move => move.To == to)
+                ?? throw Error("invalid_move", "That piece cannot be dropped here.");
+        }
+        Position from = Square(intent.From);
         PieceType? promotion = intent.Promotion switch
         {
             null => null, Promotion.Queen => PieceType.Queen, Promotion.Rook => PieceType.Rook,
@@ -346,10 +361,17 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
                 game.Result.ResignedBy is Player resigned ? ToSeat(resigned) : null),
             room.ClosedReason, Expiry(room), new(game.DrawOfferedBy is Player offer ? ToSeat(offer) : null,
                 active && connected && game.CanOfferDraw, active && game.CanClaimDraw(),
-                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []), room.ComputerSeat, game.CheckedKingSquare is Position checkedKing ? Name(checkedKing) : null);
+                active && game.CanClaimDrawWithIntendedMove() ? legal.Where(move => game.CanClaimDraw(move)).Select(Intent).ToArray() : []), room.ComputerSeat, game.CheckedKingSquare is Position checkedKing ? Name(checkedKing) : null,
+            game.Variant == GameVariant.Crazyhouse ? ChessVariant.Crazyhouse : ChessVariant.Standard,
+            (from owner in new[] { Player.White, Player.Black }
+             from piece in Enum.GetValues<ReservePiece>()
+             let count = game.Board.PocketCount(owner, Enum.Parse<PieceType>(piece.ToString()))
+             where count > 0 select new PocketPiece(ToSeat(owner), piece, count)).ToArray());
     }
 
-    private static MoveIntent Intent(Move move) => new(Name(move.From), Name(move.To),
+    private static MoveIntent Intent(Move move) => move is DropMove drop
+        ? new("@" + drop.PieceType.ToString().ToLowerInvariant(), Name(drop.To), Drop: Enum.Parse<ReservePiece>(drop.PieceType.ToString()))
+        : new(Name(move.From), Name(move.To),
         move is PawnPromotion pawn ? Enum.Parse<Promotion>(pawn.newType.ToString()) : null);
 
     private RoomUpdate Update(Room room) => new(State(room), new[] { room.White?.ConnectionId, room.Black?.ConnectionId }.OfType<string>().ToArray());
@@ -366,11 +388,16 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     }
     private static RoomException Error(string code, string message) => new(code, message);
 
-    private sealed class Room(string code, DateTimeOffset created)
+    private static void ValidateVariant(ChessVariant variant)
+    {
+        if (!Enum.IsDefined(variant)) throw Error("invalid_variant", "Choose Standard or Crazyhouse.");
+    }
+
+    private sealed class Room(string code, DateTimeOffset created, ChessVariant variant)
     {
         public string Code { get; } = code;
         public DateTimeOffset Created { get; } = created;
-        public GameState Game { get; } = new(Board.Initial(), Player.White);
+        public GameState Game { get; } = new(Board.Initial(variant == ChessVariant.Crazyhouse ? GameVariant.Crazyhouse : GameVariant.Standard), Player.White);
         public PlayerSeat? White { get; set; }
         public PlayerSeat? Black { get; set; }
         public long Revision { get; set; }

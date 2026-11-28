@@ -10,6 +10,10 @@ HTTPS server address, or use HTTP localhost for development. The public server
 currently runs through a Cloudflare tunnel from its owner's PC; it must be awake.
 
 Choose White or Black and **Create room**, then copy the invitation to a friend.
+Select **Standard** or **Crazyhouse** in the lobby before creating or finding a
+match. Random matching keeps these variants separate; joining adopts the host's
+variant. In Crazyhouse, select your reserve piece and a highlighted square to drop
+it. Both players' reserves appear beside the board. See [Crazyhouse rules](crazyhouse.md).
 They can open it in a browser or paste it into another Windows client's lobby.
 To join, paste a room code or a complete invitation and choose **Join game**. A
 complete invitation sets the server address before connecting.
