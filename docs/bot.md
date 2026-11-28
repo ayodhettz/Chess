@@ -20,12 +20,11 @@ Closing the window or replacing the position discards pending results.
 
 ## Difficulty levels and execution
 
-Main currently uses three plies and 4,000 search visits.
-Open [PR #37](https://github.com/ayodhettz/Chess/pull/37) adds Easy (1 ply / 500 visits),
-Medium (3 / 4,000), and Hard (5 / 30,000) to Windows and web setup. These levels are
-not yet merged or confirmed deployed. They change search effort, not the rules or
-evaluation; there are no Elo ratings. Medium preserves current settings, and
-suggestions stay on Medium. The node budget may stop search before maximum depth.
+Choose Easy (1 ply / 500 visits), Medium (3 / 4,000), or Hard (5 / 30,000)
+before starting a computer game in Windows or the browser. Medium preserves the
+original settings; suggestions use Medium. These are search budgets, not Elo ratings.
+The budget can stop search before maximum depth. Deployment must include the new
+server and client before a public visitor can use the selector.
 
 Offline Windows searches run inside the Windows app. Browser computer games run
 inside the C# server, not Vercel or the visitor's browser. The current public backend

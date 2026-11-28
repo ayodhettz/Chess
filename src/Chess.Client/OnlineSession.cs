@@ -20,6 +20,7 @@ public sealed class OnlineSession : IAsyncDisposable
     public RoomCommand? Pending { get; private set; }
     public bool Ready { get; private set; }
     public bool Busy { get; private set; }
+    public bool Searching { get; private set; }
     public string? Error { get; private set; }
     public event Action? Changed;
 
@@ -75,6 +76,27 @@ public sealed class OnlineSession : IAsyncDisposable
         if (Ticket != null) throw new InvalidOperationException("This window already owns a seat.");
         await Enter(await hub.InvokeAsync<SeatTicket>("JoinRoom", normalized));
     });
+
+    public Task FindMatchAsync() => Execute(async () =>
+    {
+        if (Ticket != null) throw new InvalidOperationException("This window already owns a seat.");
+        await Start();
+        Searching = true; Notify();
+        try
+        {
+            SeatTicket? ticket = null;
+            while (Searching && ticket == null)
+            {
+                ticket = await hub.InvokeAsync<SeatTicket?>("FindMatch");
+                if (ticket == null) await Task.Delay(1000);
+            }
+            ticket ??= await hub.InvokeAsync<SeatTicket?>("CancelMatch");
+            if (ticket != null) await Enter(ticket);
+        }
+        finally { Searching = false; }
+    });
+
+    public void CancelSearch() { Searching = false; Notify(); }
 
     private async Task Enter(SeatTicket ticket)
     {

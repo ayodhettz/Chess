@@ -64,15 +64,13 @@ npm run test:e2e --prefix src/Chess.Web
 Playwright starts a local server and tests independent player contexts. CI also
 publishes the Linux server including all local scripts, pieces, fonts, and licenses.
 
-## Pending additions
+## Difficulty and random opponents
 
-Difficulty selection and **Find a match** are implemented in open
-[PR #37](https://github.com/ayodhettz/Chess/pull/37) and
-[PR #38](https://github.com/ayodhettz/Chess/pull/38). They are not yet merged into main
-or confirmed live as of 22 November 2026. Easy uses 1 ply / 500 visits, Medium
-3 / 4,000, and Hard 5 / 30,000; Medium retains the current limits. Search pairs two
-waiting players with random colours, supports cancellation, and keeps private rooms.
-Both people must use the same server. There are no ratings or skill-based matching.
+Choose Easy, Medium, or Hard before starting a computer game. Choose **Find a match**
+for a random human opponent; two people must search on the same server. **Cancel
+search** removes an unmatched entry. If pairing wins the cancellation race, the game
+opens to retain the assigned seat. Colours are random; there are no ratings.
+Private room invitations remain available. Restarting the server loses the queue.
 
 ## Computer games in the browser
 
@@ -83,7 +81,8 @@ Reload restores the human seat and the complete server-owned game. Resignation a
 draw claims work as usual. Draw offers are considered when the computer takes its
 next turn; it accepts or continues using its evaluation.
 
-Searches use the existing depth-three, 4,000-node budget. A single background worker
+Searches use the selected difficulty budget: Easy 1 ply / 500 visits, Medium
+3 / 4,000, or Hard 5 / 30,000. A single background worker
 runs them sequentially, outside the room lock, so other rooms can still process moves.
 A revision check drops a result after disconnect, resignation, or another state change.
 Computer games pause when the human disconnects and resume when that seat returns.

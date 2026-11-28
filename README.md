@@ -13,11 +13,10 @@ The original foundation follows [OttoBotCode's chess tutorial](https://www.youtu
 
 ## Feature availability
 
-Current `main` supports computer games and private online rooms on web and Windows.
-[PR #37](https://github.com/ayodhettz/Chess/pull/37) adds Easy/Medium/Hard bot levels;
-[PR #38](https://github.com/ayodhettz/Chess/pull/38) adds cancellable random matchmaking.
-Both are open as of 22 November 2026; these additions are not yet merged or confirmed
-live. New Figma explorations are design drafts, not the implemented interface.
+Web and Windows support computer games with Easy, Medium, and Hard search budgets,
+private online rooms, and cancellable random matchmaking. Public deployment must
+update both frontend and backend before new features are available to visitors.
+New Figma explorations remain design drafts, not the implemented interface.
 
 ## Playing
 
@@ -153,4 +152,10 @@ Cloudflare Tunnel + PC setup and optional Render Free Docker deployment.
 Render requested a payment card on the owner's account, so it is not the current
 backend. Hosting files are already on main; there is no hosting PR prerequisite.
 The public web game requires its backend to remain online.
+
+Choose Easy (1 ply / 500 nodes), Medium (3 plies / 4,000 nodes), or Hard (5 plies / 30,000 nodes) before starting a computer game in Windows or the browser. Medium retains the original settings. These are search limits, not Elo ratings; the bot uses the last fully completed depth within its node budget. Suggestions use Medium. The web bot still runs on the chess server.
+
+### Find a match
+
+Web and Windows online setup offer **Find a match** as well as private room invitations. Two waiting connections are paired in arrival order with random colours. Search is cancellable; keep the page/window open. Disconnecting removes a waiting entry, and unrenewed entries expire after 30 seconds. If pairing wins a cancellation race, the assigned game opens so its seat is not lost. Matched games use the same private seat credentials, reconnect, draw and resignation rules as private rooms. There are no ratings or skill-based matching; two people must be searching on the same server. The queue and rooms are in memory and disappear on server restart.
 

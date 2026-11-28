@@ -123,10 +123,9 @@ redeploy a known good commit. Rolling back code does not recover in-memory games
    New client hub methods require the matching server version.
 3. Check the public `/health`, a browser computer game, a private two-player room,
    reload recovery, and a Windows-to-browser game. Backend restarts end rooms.
-4. Difficulty levels and random matchmaking are in open PRs
-   [#37](https://github.com/ayodhettz/Chess/pull/37) and
-   [#38](https://github.com/ayodhettz/Chess/pull/38); they are not yet part of main or
-   confirmed deployed. Test them after deploying their merged versions.
+4. Check Easy/Medium/Hard selection and random matchmaking after updating both
+   server and frontend. A successful merge does not update the PC server or Vercel
+   deployment automatically.
 
 ## Provider references
 
