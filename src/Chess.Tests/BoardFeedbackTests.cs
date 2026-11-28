@@ -12,6 +12,24 @@ namespace Chess.Tests;
 [Collection("WPF")]
 public class BoardFeedbackTests(WpfFixture fixture)
 {
+    [Fact]
+    public void FinishedSaveLoadedOverAnActiveGameDoesNotAnimate() => fixture.Run(() =>
+    {
+        MainWindow window = new(Player.White);
+        string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"chess-result-{Guid.NewGuid():N}.chess.json");
+        try
+        {
+            GameState saved = Fen.Parse(Fen.InitialPosition); saved.Resign(Player.Black);
+            GameFiles.Save(path, saved);
+            typeof(MainWindow).GetMethod("LoadGameFromFile", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, [path]);
+            GameOverMenu menu = Assert.IsType<GameOverMenu>(((ContentControl)window.FindName("MenuContainer")).Content);
+            menu.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+            Assert.Equal("You win", ((TextBlock)menu.FindName("Winner_Text")).Text);
+            Assert.False(((Border)menu.FindName("ResultPanel")).HasAnimatedProperties);
+        }
+        finally { window.Close(); System.IO.File.Delete(path); }
+    });
+
     [Theory]
     [InlineData(Player.White, 60)]
     [InlineData(Player.Black, 3)]
