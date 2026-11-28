@@ -2,7 +2,7 @@
 
 ![Chess board, turn indicator, and move history](bot.png)
 
-## Controls
+## Offline Windows controls
 
 Choose **Computer** and a colour, or **Local two-player**, on the start screen.
 Bot mode automatically plays the opposite side and faces the board toward you.
@@ -11,7 +11,7 @@ Bot mode automatically plays the opposite side and faces the board toward you.
 - Click a piece, then a highlighted destination. Clicking another movable friendly piece changes the selection.
 - Choose a queen, rook, bishop, or knight to complete promotion. Escape cannot cancel that choice.
 - Escape opens or closes the pause menu. A completed game stays on its result menu until rematch, exit, or undo.
-- **Undo** / **Ctrl+Z** takes back one action. **Redo** / **Ctrl+Y** / **Ctrl+Shift+Z** restores it. See [undo and redo](undo-redo.md) for result and history behavior.
+- **Undo** / **Ctrl+Z** takes back one action in local play, or a human/bot round in computer play. **Redo** / **Ctrl+Y** / **Ctrl+Shift+Z** restores it. See [undo and redo](undo-redo.md) for result and history behavior.
 - The side panel shows whose turn it is, check status, and a SAN scoresheet with White and Black columns for each full move.
 - **Resign** ends the game for the player whose turn it is. A bare opposing king cannot receive a win, so that case is a draw.
 - **Claim draw** appears when the current position qualifies for threefold repetition or the fifty-move rule.

@@ -1,5 +1,8 @@
 # Undo and redo
 
+These file/history controls apply to offline Windows games. Browser and Windows
+online matches do not support local game replacement or undo.
+
 ![Undo and redo controls beside the board](pgn.png)
 
 Use **Undo** or **Ctrl+Z** to take back the last action. Use **Redo**, **Ctrl+Y**, or

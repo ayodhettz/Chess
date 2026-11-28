@@ -1,15 +1,18 @@
 # Multiplayer server
 
 The server hosts the [browser client](browser-play.md), private rooms, moves,
-draw offers/claims, resignation, and retry receipts. Windows online controls and
-public hosting are later milestones. Offline desktop play remains available.
+draw offers/claims, resignation, and retry receipts. The [Windows online client](windows-online.md)
+uses the same rooms. Offline desktop play remains available.
 
 ## Run locally
 
 Install .NET SDK **10.0.404 or a newer .NET 10 SDK**. The server/test packages use
 the patched 10.0.15 release; keep the shared ASP.NET runtime updated for hosted play.
 
+Install Node.js 24 LTS and restore browser dependencies before building:
+
 ```powershell
+npm ci --prefix src/Chess.Web --ignore-scripts
 dotnet run --project src/Chess.Server/Chess.Server.csproj --urls http://127.0.0.1:5080
 dotnet test src/Chess.Server.Tests/Chess.Server.Tests.csproj --configuration Release -p:TreatWarningsAsErrors=true
 ```
@@ -27,6 +30,7 @@ JSON uses camelCase properties and string enums (`white`, `black`, `queen`, `kni
 
 | Hub method | Arguments | Response |
 | --- | --- | --- |
+| `CreateComputerRoom` | human seat: `white` or `black` | private human `SeatTicket`; opposite seat is the bot |
 | `CreateRoom` | preferred seat: `white` or `black` | private `SeatTicket` |
 | `JoinRoom` | room code | private `SeatTicket` for the vacant seat |
 | `ResumeRoom` | room code, credential | private `SeatTicket`; replaces the old connection |
@@ -46,7 +50,7 @@ they must never enter invitation URLs, logs, or another player's snapshot.
 
 Snapshots contain protocol version, code, revision, status, each player's connected
 flag, turn, FEN, ordered SAN moves from the standard start, legal move intents, result,
-optional closure reason, and expiry time. `draw` contains `offeredBy`, current-side
+optional closure reason, expiry time, and optional `computerSeat` for bot rooms. `draw` contains `offeredBy`, current-side
 `canOffer` / `canClaim` flags, and legal `claimMoves` for intended claims. `Result.reason`
 uses ChessLogic names, such as `Checkmate`. The winner is `null` for a draw; resignation
 also identifies `resignedBy`. There are no custom FEN starts. Clients must verify the
@@ -83,6 +87,16 @@ Errors are SignalR `HubException` messages prefixed by stable codes: `not_seated
 `capacity`, `rate_limit`, `game_not_started`, `invalid_command`, `invalid_action`, and
 `command_conflict`. Rejected commands leave the chess position unchanged.
 
+## Difficulty and matchmaking methods
+
+`CreateComputerGame(humanSeat, difficulty)` selects `easy`, `medium`, or `hard`;
+`CreateComputerRoom` retains the original Medium limits for older clients.
+`FindMatch()` and `CancelMatch()` return a private seat ticket when paired, or null
+while waiting or after an unmatched cancellation. Clients poll once per second.
+Pairing that wins a cancellation race still delivers its seat. Queue leases expire
+after 30 seconds without renewal, and disconnect removes the entry. These additive
+methods retain protocol version 2 and require the matching server deployment.
+
 ## Limits and deployment boundary
 
 Defaults: 128 rooms, 512 connections, 512 plies and 1,024 accepted commands per game, a 15-minute waiting-room
@@ -106,3 +120,11 @@ Windows CI continues to build/test the complete solution and publish the desktop
 An independent Linux workflow tests the server without WPF and publishes
 `Chess-server-linux-x64.tar.gz`. Extract that archive and run `./Chess.Server --urls
 http://127.0.0.1:5080` on a compatible Linux host for local validation.
+
+### Computer rooms
+
+`CreateComputerRoom(humanSeat)` returns a normal private human seat ticket with the
+opposite seat reserved for the custom engine. `RoomSnapshot.computerSeat` is an
+optional additive field in protocol 2; existing friend rooms return null. Other
+players cannot join the computer seat or obtain its credential. Computer rooms use
+the same room limits, expiry, command receipts, result rules, and resume mechanism.
