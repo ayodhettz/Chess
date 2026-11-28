@@ -40,16 +40,19 @@ $('confirm-yes').onclick = () => $('confirm-dialog').close('yes');
 $('confirm-no').onclick = () => $('confirm-dialog').close('no');
 async function enter(action) {
   if (session.ticket && !await confirmAction('Start another game?', 'Your previous seat stays reserved, but this tab will replace its saved credential after joining the new room.')) return;
-  await run(async () => { await action(); inGame = true; render(); });
+  await run(async () => { await action(); inGame = !!session.state; render(); });
 }
 function computerSelected() { return document.querySelector('input[name=mode]:checked').value === 'computer'; }
 for (const radio of document.querySelectorAll('input[name=mode]')) radio.onchange = () => {
+  $('difficulty-panel').hidden = !computerSelected();
   $('create-room').textContent = computerSelected() ? 'Play computer' : 'Create room';
 };
 $('create-room').onclick = () => enter(() => {
   const seat = document.querySelector('input[name=seat]:checked').value;
-  return computerSelected() ? session.computer(seat) : session.create(seat);
+  return computerSelected() ? session.computer(seat, document.querySelector('input[name=difficulty]:checked').value) : session.create(seat);
 });
+$('find-match').onclick = () => enter(() => session.findMatch());
+$('cancel-search').onclick = () => session.cancelSearch();
 $('join-form').onsubmit = event => { event.preventDefault(); void enter(() => session.join($('room-code').value)); };
 $('resume-game').onclick = () => run(async () => { await session.resume(); inGame = true; });
 $('reconnect').onclick = () => run(() => session.resume());
@@ -141,6 +144,9 @@ function renderBoard() {
 function render() {
   $('setup').hidden = inGame; $('game').hidden = !inGame; $('home').hidden = inGame;
   $('match-label').hidden = !inGame; $('new-game').hidden = !inGame; $('resume-game').hidden = !session.ticket;
+  $('find-match').disabled = session.busy;
+  $('cancel-search').hidden = !session.searching;
+  $('search-status').hidden = !session.searching;
   $('create-room').disabled = $('join-room').disabled = $('resume-game').disabled = session.busy;
   $('connection').textContent = session.ready ? 'Connected' : session.busy ? 'Connecting…' : session.ticket ? 'Offline' : 'Private online chess';
   const state = session.state; if (!state || !session.ticket) return;

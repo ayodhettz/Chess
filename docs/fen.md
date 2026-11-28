@@ -2,7 +2,7 @@
 
 ![FEN import and export dialog](fen.png)
 
-Choose **FEN position…** in the side panel. The dialog contains the current position;
+In an offline Windows game, choose **Load FEN** in the side panel. The dialog contains the current position;
 select the text and copy it to export. To import, paste a complete FEN and choose **Load**.
 An invalid position shows an error and leaves the current game unchanged.
 **Close** or Escape returns to the previous board, pause menu, or result menu.

@@ -15,6 +15,14 @@ public sealed class ChessBot
         return Task.Run(() => ChooseMove(copy, cancellationToken: cancellationToken), cancellationToken);
     }
 
+    public Task<BotDecision> ChooseMoveAsync(GameState position, BotDifficulty difficulty,
+        CancellationToken cancellationToken = default)
+    {
+        BotSearchLimits limits = BotSearchLimits.For(difficulty);
+        GameState copy = position.CopyForAnalysis();
+        return Task.Run(() => ChooseMove(copy, limits.Depth, limits.Nodes, cancellationToken), cancellationToken);
+    }
+
     public BotDecision ChooseMove(GameState position, int maxDepth = 3, int nodeBudget = 4_000,
         CancellationToken cancellationToken = default)
     {

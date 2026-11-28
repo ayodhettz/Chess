@@ -8,7 +8,7 @@ namespace Chess.Server;
 
 public sealed record RoomUpdate(RoomSnapshot State, string[] Recipients);
 public sealed record RoomLease(SeatTicket Ticket, RoomUpdate Update);
-public sealed record ComputerWork(string Code, long Revision, GameState Position);
+public sealed record ComputerWork(string Code, long Revision, GameState Position, BotDifficulty Difficulty = BotDifficulty.Medium);
 public sealed record CommandExecution(CommandResult Result, RoomUpdate? Update);
 
 public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> configuredLimits)
@@ -28,17 +28,18 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         }
     }
 
-    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false)
+    public RoomLease Create(string connectionId, Seat preferredSeat, bool computer = false, BotDifficulty difficulty = BotDifficulty.Medium)
     {
         lock (gate)
         {
+            _ = BotSearchLimits.For(difficulty);
             Connection connection = Unseated(connectionId);
             if (!Enum.IsDefined(preferredSeat)) throw Error("invalid_seat", "Choose White or Black.");
             if (rooms.Count >= limits.MaxRooms) throw Error("capacity", "The server is at room capacity.");
             string code;
             do { code = string.Concat(Enumerable.Range(0, 8).Select(_ => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[RandomNumberGenerator.GetInt32(32)])); }
             while (rooms.ContainsKey(code));
-            Room room = new(code, clock.GetUtcNow());
+            Room room = new(code, clock.GetUtcNow()) { Difficulty = difficulty };
             if (computer)
             {
                 room.ComputerSeat = preferredSeat == Seat.White ? Seat.Black : Seat.White;
@@ -47,6 +48,45 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
             }
             rooms.Add(code, room);
             return Bind(room, preferredSeat, connectionId, connection, resume: false);
+        }
+    }
+
+    // Queue entries are connection-bound and renewed by each poll.
+    private readonly Dictionary<string, (long Order, DateTimeOffset Seen)> waiting = new(StringComparer.Ordinal);
+
+    private long queueOrder;
+
+    public SeatTicket? FindMatch(string connectionId)
+    {
+        lock (gate)
+        {
+            Connection connection = CheckConnection(connectionId);
+            if (connection.MatchTicket != null) return connection.MatchTicket;
+            if (connection.Room != null) throw Error("already_seated", "Leave this connection before finding a match.");
+            DateTimeOffset now = clock.GetUtcNow();
+            foreach (string id in waiting.Where(entry => now - entry.Value.Seen > TimeSpan.FromSeconds(30)).Select(entry => entry.Key).ToArray())
+                waiting.Remove(id);
+            string? opponent = waiting.OrderBy(entry => entry.Value.Order).Select(entry => entry.Key).FirstOrDefault(id => id != connectionId);
+            if (opponent == null) { waiting[connectionId] = (waiting.TryGetValue(connectionId, out var queued) ? queued.Order : ++queueOrder, now); return null; }
+            // Create and bind both seats under the same lock; no third player can claim one.
+            Seat seat = RandomNumberGenerator.GetInt32(2) == 0 ? Seat.White : Seat.Black;
+            RoomLease first = Create(opponent, seat);
+            Room room = connections[opponent].Room!;
+            RoomLease second = Bind(room, seat == Seat.White ? Seat.Black : Seat.White, connectionId, connection, resume: false);
+            waiting.Remove(opponent); waiting.Remove(connectionId);
+            connections[opponent].MatchTicket = first.Ticket with { State = second.Update.State };
+            return connection.MatchTicket = second.Ticket;
+        }
+    }
+
+    public SeatTicket? CancelMatch(string connectionId)
+    {
+        lock (gate)
+        {
+            Connection connection = CheckConnection(connectionId);
+            waiting.Remove(connectionId);
+            // A pairing that won the race must still deliver its private seat.
+            return connection.MatchTicket;
         }
     }
 
@@ -152,7 +192,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
                 if (room.ComputerBusy || room.ComputerSeat != ToSeat(room.Game.CurrentPlayer) || Expired(room) ||
                     Status(room) != RoomStatus.Active || !Connected(room.White) || !Connected(room.Black)) continue;
                 room.ComputerBusy = true;
-                work.Add(new(room.Code, room.Revision, room.Game.CopyForAnalysis()));
+                work.Add(new(room.Code, room.Revision, room.Game.CopyForAnalysis(), room.Difficulty));
             }
             return work.ToArray();
         }
@@ -202,6 +242,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     {
         lock (gate)
         {
+            waiting.Remove(connectionId);
             if (!connections.Remove(connectionId, out Connection? connection) || connection.Room == null) return null;
             Room room = connection.Room;
             if (room.White?.ConnectionId == connectionId) room.White.ConnectionId = null;
@@ -224,7 +265,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
                 room.Revision++;
                 updates[index] = Update(room);
                 foreach (string id in updates[index].Recipients)
-                    if (connections.TryGetValue(id, out Connection? connection)) connection.Room = null;
+                    if (connections.TryGetValue(id, out Connection? connection)) { connection.Room = null; connection.MatchTicket = null; }
                 rooms.Remove(room.Code);
             }
             return updates;
@@ -241,7 +282,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
             player = new PlayerSeat(Hash(credential));
             if (seat == Seat.White) room.White = player; else room.Black = player;
         }
-        if (player!.ConnectionId is string oldId && connections.TryGetValue(oldId, out Connection? old)) old.Room = null;
+        if (player!.ConnectionId is string oldId && connections.TryGetValue(oldId, out Connection? old)) { old.Room = null; old.MatchTicket = null; }
         player.ConnectionId = connectionId;
         connection.Room = room;
         connection.Seat = seat;
@@ -253,6 +294,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     private Connection Unseated(string id)
     {
         Connection connection = CheckConnection(id);
+        waiting.Remove(id);
         if (connection.Room != null) throw Error("already_seated", "Leave this connection before joining another room.");
         return connection;
     }
@@ -336,6 +378,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
         public string? ClosedReason { get; set; }
         public Seat? ComputerSeat { get; set; }
         public bool ComputerBusy { get; set; }
+        public BotDifficulty Difficulty { get; init; }
     }
     private sealed class PlayerSeat(byte[] digest)
     {
@@ -350,6 +393,7 @@ public sealed class RoomDirectory(TimeProvider clock, IOptions<RoomLimits> confi
     {
         public Room? Room { get; set; }
         public Seat Seat { get; set; }
+        public SeatTicket? MatchTicket { get; set; }
         public DateTimeOffset Window { get; set; } = window;
         public int Calls { get; set; }
     }

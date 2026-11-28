@@ -59,6 +59,12 @@ public partial class OnlineWindow : Window
         await session!.CreateAsync(PreferWhite.IsChecked == true ? Seat.White : Seat.Black);
     });
 
+    private async void FindMatch_Click(object sender, RoutedEventArgs e) => await Run(async () =>
+    {
+        PrepareSession(); await session!.FindMatchAsync();
+    });
+    private void CancelSearch_Click(object sender, RoutedEventArgs e) => session?.CancelSearch();
+
     private async void Join_Click(object sender, RoutedEventArgs e) => await Run(async () =>
     {
         if (session == null && Uri.TryCreate(RoomInput.Text.Trim(), UriKind.Absolute, out Uri? link))
@@ -131,6 +137,8 @@ public partial class OnlineWindow : Window
     private void Render()
     {
         if (closed) return;
+        FindMatch.IsEnabled = session?.Busy != true;
+        CancelSearch.Visibility = SearchStatus.Visibility = session?.Searching == true ? Visibility.Visible : Visibility.Collapsed;
         CreateRoom.IsEnabled = JoinRoom.IsEnabled = session?.Busy != true;
         ServerAddress.IsEnabled = RoomInput.IsEnabled = session == null;
         if (session?.Error is string error) Notice.Text = error;
